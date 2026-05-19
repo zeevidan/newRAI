@@ -9,11 +9,19 @@ import {
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
 import {
+  buildProjectOrgChart,
   formatCurrency,
+  getProjectActiveAgentCount,
+  getProjectAgents,
+  getProjectPeopleCount,
+  getProjectResources,
+  getProjectTaskCount,
+  getProjectUsers,
   projectActivity,
   projectMessages,
   projectTasks,
 } from "@/data/mock"
+import { OrgChart, TeamDirectory } from "@/components/team/org-chart"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -47,6 +55,13 @@ export function ProjectMainPane() {
   const tasks = projectTasks[selectedProject.id] ?? []
   const messages = projectMessages[selectedProject.id] ?? []
   const activity = projectActivity[selectedProject.id] ?? []
+  const projectUsers = getProjectUsers(selectedProject.id, users)
+  const projectAgents = getProjectAgents(selectedProject.id, agents)
+  const projectResources = getProjectResources(selectedProject.id, resources)
+  const orgChartMembers = buildProjectOrgChart(selectedProject.id, users, agents)
+  const peopleCount = getProjectPeopleCount(selectedProject.id, users, agents)
+  const taskCount = getProjectTaskCount(selectedProject.id)
+  const activeAgentCount = getProjectActiveAgentCount(selectedProject.id, agents)
   const budgetPct = Math.round(
     (selectedProject.budgetUsed / selectedProject.budgetTotal) * 100,
   )
@@ -70,12 +85,12 @@ export function ProjectMainPane() {
           </div>
           <div className="flex gap-10 text-sm">
             <div>
-              <p className="text-muted-foreground">Team</p>
-              <p className="font-medium">{selectedProject.memberCount}</p>
+              <p className="text-muted-foreground">People & agents</p>
+              <p className="font-medium">{peopleCount}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Tasks</p>
-              <p className="font-medium">{selectedProject.taskCount}</p>
+              <p className="font-medium">{taskCount}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Budget</p>
@@ -122,25 +137,31 @@ export function ProjectMainPane() {
         <ScrollArea className="min-h-0 flex-1">
           <div className="p-6">
             <TabsContent value="overview" className="mt-0 space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>People</CardDescription>
+                    <CardTitle className="text-2xl">{projectUsers.length}</CardTitle>
+                  </CardHeader>
+                </Card>
                 <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>Active agents</CardDescription>
-                    <CardTitle className="text-2xl">
-                      {agents.filter((a) => a.status === "active").length}
-                    </CardTitle>
+                    <CardTitle className="text-2xl">{activeAgentCount}</CardTitle>
                   </CardHeader>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
                     <CardDescription>Resources</CardDescription>
-                    <CardTitle className="text-2xl">{resources.length}</CardTitle>
+                    <CardTitle className="text-2xl">{projectResources.length}</CardTitle>
                   </CardHeader>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>Vaults</CardDescription>
-                    <CardTitle className="text-2xl">{vaults.length}</CardTitle>
+                    <CardDescription>Open tasks</CardDescription>
+                    <CardTitle className="text-2xl">
+                      {tasks.filter((task) => task.status !== "done").length}
+                    </CardTitle>
                   </CardHeader>
                 </Card>
               </div>
@@ -166,26 +187,9 @@ export function ProjectMainPane() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="team" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Team members</CardTitle>
-                  <CardDescription>
-                    People with access to this organization
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="divide-y divide-border">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between py-3">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                      <Badge variant="secondary">{user.role}</Badge>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+            <TabsContent value="team" className="mt-0 space-y-6">
+              <OrgChart members={orgChartMembers} />
+              <TeamDirectory users={projectUsers} agents={projectAgents} />
             </TabsContent>
 
             <TabsContent value="messages" className="mt-0">
@@ -216,6 +220,9 @@ export function ProjectMainPane() {
               <Card>
                 <CardHeader>
                   <CardTitle>Tasks</CardTitle>
+                  <CardDescription>
+                    {taskCount} total · {tasks.filter((task) => task.status !== "done").length} open
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {tasks.length === 0 ? (
@@ -329,30 +336,44 @@ export function ProjectMainPane() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">AI Agents</CardTitle>
+                    <CardDescription>
+                      {projectAgents.length} assigned to this project
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {agents.map((agent) => (
-                      <div
-                        key={agent.id}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span>{agent.name}</span>
-                        <span className="text-muted-foreground">{agent.model}</span>
-                      </div>
-                    ))}
+                    {projectAgents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No agents on this project.</p>
+                    ) : (
+                      projectAgents.map((agent) => (
+                        <div
+                          key={agent.id}
+                          className="flex items-center justify-between text-sm"
+                        >
+                          <span>{agent.name}</span>
+                          <span className="text-muted-foreground">{agent.model}</span>
+                        </div>
+                      ))
+                    )}
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Resources & Vaults</CardTitle>
+                    <CardDescription>
+                      {projectResources.length} project resources · {vaults.length} org vaults
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    {resources.map((r) => (
-                      <div key={r.id} className="flex justify-between">
-                        <span>{r.name}</span>
-                        <span className="text-muted-foreground">{r.type}</span>
-                      </div>
-                    ))}
+                    {projectResources.length === 0 ? (
+                      <p className="text-muted-foreground">No resources on this project.</p>
+                    ) : (
+                      projectResources.map((r) => (
+                        <div key={r.id} className="flex justify-between">
+                          <span>{r.name}</span>
+                          <span className="text-muted-foreground">{r.type}</span>
+                        </div>
+                      ))
+                    )}
                     <Separator />
                     {vaults.map((v) => (
                       <div key={v.id} className="flex justify-between">

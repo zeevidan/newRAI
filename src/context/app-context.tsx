@@ -121,8 +121,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updatedAt: new Date().toISOString(),
         budgetUsed: 0,
         budgetTotal: 25000,
-        memberCount: 1,
-        taskCount: 0,
       }
       setProjectList((prev) => [project, ...prev])
       setSelectedProjectId(project.id)
