@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useApp } from "@/context/app-context"
 import type { CreateType } from "@/context/app-context"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,7 @@ export function CreateEntityDialog({ type, open, onOpenChange }: CreateEntityDia
     addVault,
     addConfiguration,
   } = useApp()
+  const navigate = useNavigate()
 
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -67,9 +69,11 @@ export function CreateEntityDialog({ type, open, onOpenChange }: CreateEntityDia
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     switch (type) {
-      case "project":
-        addProject(name, description)
+      case "project": {
+        const projectId = addProject(name, description)
+        navigate(`/projects/${projectId}`)
         break
+      }
       case "user":
         addUser({ name, email, role })
         break

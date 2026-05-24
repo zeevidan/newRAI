@@ -154,11 +154,93 @@ export interface OrgChartMember {
   status?: EntityStatus
 }
 
+export type PlatformRole = "member" | "org_admin" | "platform_admin"
+
+export interface SessionUser {
+  id: string
+  name: string
+  email: string
+  avatar: string
+  platformRole: PlatformRole
+  orgAdminOrgIds?: string[]
+}
+
+export interface PlatformConfiguration {
+  id: string
+  key: string
+  value: string
+  environment: string
+  description?: string
+}
+
+export interface Policy {
+  id: string
+  orgId?: string
+  name: string
+  description: string
+  status: "active" | "draft"
+  updatedAt: string
+}
+
+/** Swap to mockSessionProfiles.orgAdmin or .member to test other personas. */
+export type MockSessionProfileKey = "platformAdmin" | "orgAdmin" | "member"
+
+export const mockSessionProfiles: Record<MockSessionProfileKey, SessionUser> = {
+  platformAdmin: {
+    id: "u1",
+    name: "Alex Rivera",
+    email: "alex@acme.io",
+    avatar: "AR",
+    platformRole: "platform_admin",
+    orgAdminOrgIds: ["org-1"],
+  },
+  orgAdmin: {
+    id: "u6",
+    name: "Casey Nguyen",
+    email: "casey@northwind.io",
+    avatar: "CN",
+    platformRole: "org_admin",
+    orgAdminOrgIds: ["org-2"],
+  },
+  member: {
+    id: "u2",
+    name: "Morgan Lee",
+    email: "morgan@acme.io",
+    avatar: "ML",
+    platformRole: "member",
+  },
+}
+
+export const mockSessionProfileOptions: {
+  key: MockSessionProfileKey
+  label: string
+  description: string
+}[] = [
+  {
+    key: "platformAdmin",
+    label: "Alex Rivera",
+    description: "Platform admin",
+  },
+  {
+    key: "orgAdmin",
+    label: "Casey Nguyen",
+    description: "Org admin",
+  },
+  {
+    key: "member",
+    label: "Morgan Lee",
+    description: "Member",
+  },
+]
+
+export const sessionUser: SessionUser = mockSessionProfiles.platformAdmin
+
+/** @deprecated Use sessionUser instead */
 export const currentUser = {
-  id: "u1",
-  name: "Alex Rivera",
-  email: "alex@acme.io",
-  avatar: "AR",
+  id: sessionUser.id,
+  name: sessionUser.name,
+  email: sessionUser.email,
+  avatar: sessionUser.avatar,
 }
 
 export const organizations: Organization[] = [
@@ -652,6 +734,79 @@ export const configurations: Configuration[] = [
   { id: "c4", orgId: "org-1", projectId: "proj-2", key: "CONFIDENCE_THRESHOLD", environment: "production" },
   { id: "c5", orgId: "org-2", projectId: "proj-4", key: "INGEST_BATCH_SIZE", environment: "production" },
 ]
+
+export const platformConfigurations: PlatformConfiguration[] = [
+  {
+    id: "pc1",
+    key: "MAX_AGENTS_PER_ORG",
+    value: "50",
+    environment: "production",
+    description: "Maximum active agents per organization",
+  },
+  {
+    id: "pc2",
+    key: "DEFAULT_LLM_PROVIDER",
+    value: "openai",
+    environment: "global",
+    description: "Default LLM provider for new orgs",
+  },
+  {
+    id: "pc3",
+    key: "AUDIT_LOG_RETENTION_DAYS",
+    value: "90",
+    environment: "global",
+    description: "Platform audit log retention period",
+  },
+]
+
+export const policies: Policy[] = [
+  {
+    id: "pol1",
+    name: "Data residency — US only",
+    description: "Require all org data to remain in US regions.",
+    status: "active",
+    updatedAt: "2026-05-10T12:00:00Z",
+  },
+  {
+    id: "pol2",
+    name: "Agent execution sandbox",
+    description: "Agents must run in isolated execution environments.",
+    status: "active",
+    updatedAt: "2026-05-08T09:00:00Z",
+  },
+  {
+    id: "pol3",
+    orgId: "org-1",
+    name: "PII redaction on exports",
+    description: "Automatically redact PII from project exports.",
+    status: "active",
+    updatedAt: "2026-05-15T14:00:00Z",
+  },
+  {
+    id: "pol4",
+    orgId: "org-1",
+    name: "External API access",
+    description: "Require approval for agents calling external APIs.",
+    status: "draft",
+    updatedAt: "2026-05-18T11:00:00Z",
+  },
+  {
+    id: "pol5",
+    orgId: "org-2",
+    name: "Telemetry retention",
+    description: "Retain telemetry data for 180 days maximum.",
+    status: "active",
+    updatedAt: "2026-05-12T16:00:00Z",
+  },
+]
+
+export function getPlatformPolicies() {
+  return policies.filter((policy) => !policy.orgId)
+}
+
+export function getOrgPolicies(orgId: string) {
+  return policies.filter((policy) => policy.orgId === orgId)
+}
 
 export const projectTasks: Record<string, Task[]> = {
   "proj-1": [

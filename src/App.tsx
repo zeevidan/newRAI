@@ -1,12 +1,15 @@
+import { BrowserRouter } from "react-router-dom"
 import { AppProvider } from "@/context/app-context"
-import { AdminShell } from "@/components/layout/admin-shell"
+import { AppRoutes } from "@/routes/app-routes"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 export default function App() {
   return (
     <TooltipProvider>
       <AppProvider>
-        <AdminShell />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
       </AppProvider>
     </TooltipProvider>
   )

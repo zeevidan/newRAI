@@ -11,14 +11,17 @@ import {
   organizations,
   projects as initialProjects,
   resources as initialResources,
+  mockSessionProfiles,
   users as initialUsers,
   vaults as initialVaults,
   type Agent,
   type Configuration,
   type EntityStatus,
+  type MockSessionProfileKey,
   type Organization,
   type Project,
   type Resource,
+  type SessionUser,
   type User,
   type Vault,
 } from "@/data/mock"
@@ -26,6 +29,8 @@ import {
 type CreateType = "project" | "user" | "agent" | "resource" | "vault" | "configuration"
 
 interface AppContextValue {
+  sessionUser: SessionUser
+  switchSessionUser: (profileKey: MockSessionProfileKey) => void
   organizations: Organization[]
   currentOrg: Organization
   setCurrentOrgId: (id: string) => void
@@ -42,7 +47,7 @@ interface AppContextValue {
   resources: Resource[]
   vaults: Vault[]
   configurations: Configuration[]
-  addProject: (name: string, description: string) => void
+  addProject: (name: string, description: string) => string
   addUser: (input: {
     name: string
     email: string
@@ -92,6 +97,9 @@ const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentOrgId, setCurrentOrgId] = useState(organizations[0].id)
+  const [sessionUserState, setSessionUserState] = useState<SessionUser>(
+    mockSessionProfiles.platformAdmin,
+  )
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>("proj-1")
   const [projectSearch, setProjectSearch] = useState("")
   const [projectList, setProjectList] = useState(initialProjects)
@@ -130,6 +138,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     items.filter((item) => item.orgId === currentOrgId)
 
   const value: AppContextValue = {
+    sessionUser: sessionUserState,
+    switchSessionUser: (profileKey) => {
+      const user = mockSessionProfiles[profileKey]
+      setSessionUserState(user)
+
+      if (profileKey === "orgAdmin" && user.orgAdminOrgIds?.[0]) {
+        const orgId = user.orgAdminOrgIds[0]
+        setCurrentOrgId(orgId)
+        const first = projectList.find((p) => p.orgId === orgId)
+        setSelectedProjectId(first?.id ?? null)
+        return
+      }
+
+      if (profileKey === "member") {
+        const memberOrg = initialUsers.find((item) => item.id === user.id)?.orgId
+        if (memberOrg) {
+          setCurrentOrgId(memberOrg)
+          const first = projectList.find((p) => p.orgId === memberOrg)
+          setSelectedProjectId(first?.id ?? null)
+        }
+        return
+      }
+
+      if (profileKey === "platformAdmin") {
+        setCurrentOrgId("org-1")
+        const first = projectList.find((p) => p.orgId === "org-1")
+        setSelectedProjectId(first?.id ?? null)
+      }
+    },
     organizations,
     currentOrg,
     setCurrentOrgId: (id) => {
@@ -139,7 +176,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     orgProjects,
     recentProjects,
-    selectedProjectId: selectedProject?.id ?? null,
+    selectedProjectId,
     setSelectedProjectId,
     selectedProject,
     projectSearch,
@@ -163,6 +200,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setProjectList((prev) => [project, ...prev])
       setSelectedProjectId(project.id)
+      return project.id
     },
     addUser: (input) => {
       const id = `u-${Date.now()}`

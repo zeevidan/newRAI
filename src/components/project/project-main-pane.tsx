@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useParams } from "react-router-dom"
 import {
   Activity,
   ArrowLeftRight,
@@ -39,13 +40,17 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function ProjectMainPane() {
+  const { projectId } = useParams()
   const {
-    selectedProject,
+    orgProjects,
     users,
     agents,
     resources,
     configurations,
   } = useApp()
+
+  const selectedProject =
+    orgProjects.find((project) => project.id === projectId) ?? null
 
   if (!selectedProject) {
     return (

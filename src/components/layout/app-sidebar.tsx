@@ -1,10 +1,12 @@
 import { FolderKanban, Search } from "lucide-react"
+import { useNavigate, useParams } from "react-router-dom"
 import { useApp } from "@/context/app-context"
 import { formatRelativeDate } from "@/data/mock"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { SidebarUserSwitcher } from "@/components/layout/sidebar-user-switcher"
 import { cn } from "@/lib/utils"
 
 export function AppSidebar() {
@@ -13,12 +15,16 @@ export function AppSidebar() {
     setProjectSearch,
     filteredProjects,
     recentProjects,
-    selectedProjectId,
-    setSelectedProjectId,
   } = useApp()
+  const navigate = useNavigate()
+  const { projectId: activeProjectId } = useParams()
+
+  function selectProject(projectId: string) {
+    navigate(`/projects/${projectId}`)
+  }
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+    <aside className="flex h-full min-h-0 w-72 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
       <div className="shrink-0 space-y-3 p-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -39,12 +45,12 @@ export function AppSidebar() {
       <ScrollArea className="min-h-0 flex-1 px-2 pb-4">
         <div className="space-y-1 px-2">
           {(projectSearch ? filteredProjects : recentProjects).map((project) => {
-            const active = project.id === selectedProjectId
+            const active = project.id === activeProjectId
             return (
               <button
                 key={project.id}
                 type="button"
-                onClick={() => setSelectedProjectId(project.id)}
+                onClick={() => selectProject(project.id)}
                 className={cn(
                   "flex w-full flex-col gap-1 rounded-lg px-3 py-2.5 text-left transition-colors",
                   active
@@ -81,12 +87,12 @@ export function AppSidebar() {
                 All projects
               </p>
               {filteredProjects.slice(recentProjects.length).map((project) => {
-                const active = project.id === selectedProjectId
+                const active = project.id === activeProjectId
                 return (
                   <button
                     key={project.id}
                     type="button"
-                    onClick={() => setSelectedProjectId(project.id)}
+                    onClick={() => selectProject(project.id)}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                       active
@@ -109,6 +115,7 @@ export function AppSidebar() {
           )}
         </div>
       </ScrollArea>
+      <SidebarUserSwitcher />
     </aside>
   )
 }
