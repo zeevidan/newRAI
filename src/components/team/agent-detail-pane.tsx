@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
 
 const AGENT_ROLES = ["Manager", "QA", "Writer", "Analyst"] as const
 const MODELS = ["gpt-4.1", "gpt-4.1-mini", "claude-sonnet"] as const
@@ -52,12 +53,14 @@ interface AgentDetailPaneProps {
   agentId: string
   projectId: string
   orgChartMembers: OrgChartMember[]
+  onSaved?: () => void
 }
 
 export function AgentDetailPane({
   agentId,
   projectId,
   orgChartMembers,
+  onSaved,
 }: AgentDetailPaneProps) {
   const { users, agents, updateAgent } = useApp()
   const agent = agents.find((item) => item.id === agentId)
@@ -66,8 +69,7 @@ export function AgentDetailPane({
   const [title, setTitle] = useState(agent?.title ?? "")
   const [model, setModel] = useState(agent?.model ?? "gpt-4.1")
   const [status, setStatus] = useState<EntityStatus>(agent?.status ?? "active")
-  const [managerId, setManagerId] = useState(agent?.managerId ?? "")
-  const [saved, setSaved] = useState(false)
+  const [managerId, setManagerId] = useState<string | null>(agent?.managerId ?? null)
 
   const activity = getAgentActivity(agentId)
   const logs = getAgentLogs(agentId)
@@ -80,24 +82,13 @@ export function AgentDetailPane({
   const isRoot = agentId === chartRootId
   const allowTopLevel = !chartRootId || isRoot
 
-  const managerOptions = useMemo(
-    () => [
-      ...users.map((item) => ({ id: item.id, label: item.name, kind: "user" as const })),
-      ...agents
-        .filter((item) => item.id !== agentId)
-        .map((item) => ({ id: item.id, label: item.name, kind: "agent" as const })),
-    ],
-    [users, agents, agentId],
-  )
-
   useEffect(() => {
     if (!agent) return
     setName(agent.name)
     setTitle(agent.title ?? "")
     setModel(agent.model)
     setStatus(agent.status)
-    setManagerId(agent.managerId ?? "")
-    setSaved(false)
+    setManagerId(agent.managerId ?? null)
   }, [agent])
 
   if (!agent) {
@@ -125,7 +116,7 @@ export function AgentDetailPane({
       projectId,
       onProject: true,
     })
-    setSaved(true)
+    onSaved?.()
   }
 
   const managerName = agent.managerId
@@ -254,34 +245,17 @@ export function AgentDetailPane({
 
                 <div className="grid gap-2">
                   <Label>Reports to</Label>
-                  <Select
-                    value={managerId || "none"}
-                    onValueChange={(value) => {
-                      if (!value) return
-                      setManagerId(value === "none" ? "" : value)
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select manager" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allowTopLevel && (
-                        <SelectItem value="none">No manager (top level)</SelectItem>
-                      )}
-                      {managerOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.label} ({option.kind === "agent" ? "agent" : "person"})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ReportsToCombobox
+                    members={orgChartMembers}
+                    excludeId={agentId}
+                    value={managerId}
+                    onValueChange={setManagerId}
+                    allowTopLevel={allowTopLevel}
+                  />
                 </div>
 
                 <div className="flex items-center gap-3 pt-2 md:col-span-2">
-                  <Button type="submit">Save changes</Button>
-                  {saved && (
-                    <span className="text-sm text-muted-foreground">Saved</span>
-                  )}
+                  <Button type="submit">Save and close</Button>
                 </div>
               </form>
             </CardContent>

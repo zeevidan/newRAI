@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
 
 const USER_ROLES = ["Admin", "Engineer", "PM", "Designer"] as const
 
@@ -56,20 +57,21 @@ interface PersonDetailPaneProps {
   userId: string
   projectId: string
   orgChartMembers: OrgChartMember[]
+  onSaved?: () => void
 }
 
 export function PersonDetailPane({
   userId,
   projectId,
   orgChartMembers,
+  onSaved,
 }: PersonDetailPaneProps) {
   const { users, agents, updateUser } = useApp()
   const user = users.find((item) => item.id === userId)
   const directory = getDirectoryProfile(userId)
 
   const [role, setRole] = useState(user?.role ?? "Engineer")
-  const [managerId, setManagerId] = useState(user?.managerId ?? "")
-  const [saved, setSaved] = useState(false)
+  const [managerId, setManagerId] = useState<string | null>(user?.managerId ?? null)
 
   const chartRootId = useMemo(
     () => getChartRootId(orgChartMembers, userId),
@@ -78,21 +80,10 @@ export function PersonDetailPane({
   const isRoot = userId === chartRootId
   const allowTopLevel = !chartRootId || isRoot
 
-  const managerOptions = useMemo(
-    () => [
-      ...users
-        .filter((item) => item.id !== userId)
-        .map((item) => ({ id: item.id, label: item.name, kind: "user" as const })),
-      ...agents.map((item) => ({ id: item.id, label: item.name, kind: "agent" as const })),
-    ],
-    [users, agents, userId],
-  )
-
   useEffect(() => {
     if (!user) return
     setRole(user.role)
-    setManagerId(user.managerId ?? "")
-    setSaved(false)
+    setManagerId(user.managerId ?? null)
   }, [user])
 
   if (!user) {
@@ -117,7 +108,7 @@ export function PersonDetailPane({
       projectId,
       onProject: true,
     })
-    setSaved(true)
+    onSaved?.()
   }
 
   const managerName = user.managerId
@@ -237,27 +228,13 @@ export function PersonDetailPane({
 
               <div className="grid gap-2">
                 <Label>Reports to (org chart)</Label>
-                <Select
-                  value={managerId || "none"}
-                  onValueChange={(value) => {
-                    if (!value) return
-                    setManagerId(value === "none" ? "" : value)
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allowTopLevel && (
-                      <SelectItem value="none">No manager (top level)</SelectItem>
-                    )}
-                    {managerOptions.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.label} ({option.kind === "agent" ? "agent" : "person"})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ReportsToCombobox
+                  members={orgChartMembers}
+                  excludeId={userId}
+                  value={managerId}
+                  onValueChange={setManagerId}
+                  allowTopLevel={allowTopLevel}
+                />
                 {managerName && (
                   <p className="text-xs text-muted-foreground">
                     Current manager: {managerName}
@@ -268,10 +245,7 @@ export function PersonDetailPane({
               <Separator />
 
               <div className="flex items-center gap-3">
-                <Button type="submit">Save assignment</Button>
-                {saved && (
-                  <span className="text-sm text-muted-foreground">Saved</span>
-                )}
+                <Button type="submit">Save and close</Button>
               </div>
             </form>
           </CardContent>

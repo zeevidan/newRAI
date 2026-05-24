@@ -119,6 +119,7 @@ export function TeamMemberSheet({
                   userId={state.id}
                   projectId={projectId}
                   orgChartMembers={orgChartMembers}
+                  onSaved={onCloseTeamContext}
                 />
               )}
               {state.open && state.mode === "detail" && state.kind === "agent" && (
@@ -126,6 +127,7 @@ export function TeamMemberSheet({
                   agentId={state.id}
                   projectId={projectId}
                   orgChartMembers={orgChartMembers}
+                  onSaved={onCloseTeamContext}
                 />
               )}
             </div>

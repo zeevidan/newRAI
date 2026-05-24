@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
 
 const AGENT_ROLES = ["Manager", "QA", "Writer", "Analyst"] as const
 const USER_ROLES = ["Admin", "Engineer", "PM", "Designer"] as const
@@ -51,7 +52,7 @@ export function TeamMemberCreatePane({
   onCreated,
   embedded = false,
 }: TeamMemberCreatePaneProps) {
-  const { currentOrg, users, agents, addUser, addAgent } = useApp()
+  const { currentOrg, users, addUser, addAgent } = useApp()
   const isAgent = kind === "agent"
 
   const chartRootId = useMemo(() => getChartRootId(orgChartMembers), [orgChartMembers])
@@ -62,29 +63,13 @@ export function TeamMemberCreatePane({
     [currentOrg.id, users, projectId],
   )
 
-  const managerOptions = useMemo(
-    () => [
-      ...users.map((user) => ({
-        id: user.id,
-        label: user.name,
-        kind: "user" as const,
-      })),
-      ...agents.map((agent) => ({
-        id: agent.id,
-        label: agent.name,
-        kind: "agent" as const,
-      })),
-    ],
-    [users, agents],
-  )
-
   const [directoryQuery, setDirectoryQuery] = useState("")
   const [selectedDirectoryId, setSelectedDirectoryId] = useState<string>("")
   const [role, setRole] = useState<string>("Engineer")
   const [name, setName] = useState("Manager")
   const [title, setTitle] = useState("Project agent")
   const [model, setModel] = useState("gpt-4.1")
-  const [reportsTo, setReportsTo] = useState(managerId ?? chartRootId ?? "")
+  const [reportsTo, setReportsTo] = useState<string | null>(managerId ?? chartRootId ?? null)
 
   const filteredCandidates = directoryCandidates.filter((candidate) => {
     const query = directoryQuery.toLowerCase()
@@ -96,7 +81,7 @@ export function TeamMemberCreatePane({
   })
 
   useEffect(() => {
-    setReportsTo(managerId ?? chartRootId ?? "")
+    setReportsTo(managerId ?? chartRootId ?? null)
   }, [managerId, chartRootId])
 
   function handleSubmit(e: React.FormEvent) {
@@ -249,27 +234,12 @@ export function TeamMemberCreatePane({
 
           <div className="grid gap-2 md:col-span-2">
             <Label>Reports to</Label>
-            <Select
-              value={reportsTo || "none"}
-              onValueChange={(value) => {
-                if (!value) return
-                setReportsTo(value === "none" ? "" : value)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select manager" />
-              </SelectTrigger>
-              <SelectContent>
-                {allowTopLevel && (
-                  <SelectItem value="none">No manager (top level)</SelectItem>
-                )}
-                {managerOptions.map((option) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.label} ({option.kind === "agent" ? "agent" : "person"})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ReportsToCombobox
+              members={orgChartMembers}
+              value={reportsTo}
+              onValueChange={setReportsTo}
+              allowTopLevel={allowTopLevel}
+            />
           </div>
 
           <div className="flex gap-3 pt-2 md:col-span-2">
