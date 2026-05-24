@@ -1,7 +1,9 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Activity,
+  ArrowLeftRight,
   CircleDollarSign,
+  FolderKanban,
   LayoutDashboard,
   ListTodo,
   MessageSquare,
@@ -22,7 +24,9 @@ import {
   projectTasks,
 } from "@/data/mock"
 import { TeamTab } from "@/components/team/team-tab"
+import { WorkspaceTab } from "@/components/workspace/workspace-tab"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -40,7 +44,6 @@ export function ProjectMainPane() {
     users,
     agents,
     resources,
-    vaults,
     configurations,
   } = useApp()
 
@@ -60,11 +63,22 @@ export function ProjectMainPane() {
   const projectResources = getProjectResources(selectedProject.id, resources)
   const peopleCount = getProjectPeopleCount(selectedProject.id, users, agents)
   const taskCount = getProjectTaskCount(selectedProject.id)
+  const openTaskCount = tasks.filter((task) => task.status !== "done").length
+  const interactionCount = messages.length + taskCount
   const activeAgentCount = getProjectActiveAgentCount(selectedProject.id, agents)
   const budgetPct = Math.round(
     (selectedProject.budgetUsed / selectedProject.budgetTotal) * 100,
   )
   const [activeTab, setActiveTab] = useState("overview")
+  const [interactionView, setInteractionView] = useState<"messages" | "tasks">(
+    "messages",
+  )
+
+  useEffect(() => {
+    if (activeTab !== "interactions") {
+      setInteractionView("messages")
+    }
+  }, [activeTab])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -89,8 +103,8 @@ export function ProjectMainPane() {
               <p className="font-medium">{peopleCount}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Tasks</p>
-              <p className="font-medium">{taskCount}</p>
+              <p className="text-muted-foreground">Interactions</p>
+              <p className="font-medium">{interactionCount}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Budget</p>
@@ -115,13 +129,13 @@ export function ProjectMainPane() {
               <Users className="size-4" />
               Team
             </TabsTrigger>
-            <TabsTrigger value="messages">
-              <MessageSquare className="size-4" />
-              Messages
+            <TabsTrigger value="workspace">
+              <FolderKanban className="size-4" />
+              Workspace
             </TabsTrigger>
-            <TabsTrigger value="tasks">
-              <ListTodo className="size-4" />
-              Tasks
+            <TabsTrigger value="interactions">
+              <ArrowLeftRight className="size-4" />
+              Interactions
             </TabsTrigger>
             <TabsTrigger value="activity">
               <Activity className="size-4" />
@@ -200,67 +214,101 @@ export function ProjectMainPane() {
               />
             </TabsContent>
 
-            <TabsContent value="messages" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Project messages</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {messages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No messages yet.</p>
-                  ) : (
-                    messages.map((msg) => (
-                      <div key={msg.id}>
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-sm font-medium">{msg.author}</span>
-                          <span className="text-xs text-muted-foreground">{msg.time}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{msg.content}</p>
-                        <Separator className="mt-4" />
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
+            <TabsContent value="workspace" className="mt-0">
+              <WorkspaceTab
+                projectId={selectedProject.id}
+                isActive={activeTab === "workspace"}
+              />
             </TabsContent>
 
-            <TabsContent value="tasks" className="mt-0">
+            <TabsContent value="interactions" className="mt-0">
               <Card>
-                <CardHeader>
-                  <CardTitle>Tasks</CardTitle>
-                  <CardDescription>
-                    {taskCount} total · {tasks.filter((task) => task.status !== "done").length} open
-                  </CardDescription>
+                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle>Interactions</CardTitle>
+                    <CardDescription>
+                      {interactionView === "messages"
+                        ? `${messages.length} ${messages.length === 1 ? "message" : "messages"} on this project`
+                        : `${taskCount} total · ${openTaskCount} open`}
+                    </CardDescription>
+                  </div>
+
+                  <div className="flex rounded-lg border border-border bg-background p-0.5">
+                    <Button
+                      type="button"
+                      variant={interactionView === "messages" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setInteractionView("messages")}
+                    >
+                      <MessageSquare className="size-3.5" />
+                      Messages
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={interactionView === "tasks" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setInteractionView("tasks")}
+                    >
+                      <ListTodo className="size-3.5" />
+                      Tasks
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {tasks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No tasks yet.</p>
+
+                <CardContent>
+                  {interactionView === "messages" ? (
+                    <div className="space-y-4">
+                      {messages.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No messages yet.</p>
+                      ) : (
+                        messages.map((msg) => (
+                          <div key={msg.id}>
+                            <div className="mb-1 flex items-center justify-between">
+                              <span className="text-sm font-medium">{msg.author}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {msg.time}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{msg.content}</p>
+                            <Separator className="mt-4" />
+                          </div>
+                        ))
+                      )}
+                    </div>
                   ) : (
-                    tasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
-                      >
-                        <div>
-                          <p className="font-medium">{task.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {task.assignee} · due {task.due}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            task.status === "done"
-                              ? "secondary"
-                              : task.status === "in_progress"
-                                ? "default"
-                                : "outline"
-                          }
-                          className="capitalize"
-                        >
-                          {task.status.replace("_", " ")}
-                        </Badge>
-                      </div>
-                    ))
+                    <div className="space-y-3">
+                      {tasks.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No tasks yet.</p>
+                      ) : (
+                        tasks.map((task) => (
+                          <div
+                            key={task.id}
+                            className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
+                          >
+                            <div>
+                              <p className="font-medium">{task.title}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {task.assignee} · due {task.due}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={
+                                task.status === "done"
+                                  ? "secondary"
+                                  : task.status === "in_progress"
+                                    ? "default"
+                                    : "outline"
+                              }
+                              className="capitalize"
+                            >
+                              {task.status.replace("_", " ")}
+                            </Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -340,60 +388,29 @@ export function ProjectMainPane() {
                 </CardContent>
               </Card>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">AI Agents</CardTitle>
-                    <CardDescription>
-                      {projectAgents.length} assigned to this project
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {projectAgents.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No agents on this project.</p>
-                    ) : (
-                      projectAgents.map((agent) => (
-                        <div
-                          key={agent.id}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span>{agent.name}</span>
-                          <span className="text-muted-foreground">{agent.model}</span>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Resources & Vaults</CardTitle>
-                    <CardDescription>
-                      {projectResources.length} project resources · {vaults.length} org vaults
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    {projectResources.length === 0 ? (
-                      <p className="text-muted-foreground">No resources on this project.</p>
-                    ) : (
-                      projectResources.map((r) => (
-                        <div key={r.id} className="flex justify-between">
-                          <span>{r.name}</span>
-                          <span className="text-muted-foreground">{r.type}</span>
-                        </div>
-                      ))
-                    )}
-                    <Separator />
-                    {vaults.map((v) => (
-                      <div key={v.id} className="flex justify-between">
-                        <span>{v.name}</span>
-                        <span className="text-muted-foreground">
-                          {v.secrets} secrets
-                        </span>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">AI Agents</CardTitle>
+                  <CardDescription>
+                    {projectAgents.length} assigned to this project
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {projectAgents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No agents on this project.</p>
+                  ) : (
+                    projectAgents.map((agent) => (
+                      <div
+                        key={agent.id}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span>{agent.name}</span>
+                        <span className="text-muted-foreground">{agent.model}</span>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </div>
         </ScrollArea>

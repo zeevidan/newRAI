@@ -48,6 +48,9 @@ export interface Resource {
   name: string
   type: "file" | "dataset" | "api"
   size: string
+  provider?: string
+  status?: "connected" | "syncing" | "error" | "paused"
+  lastSyncedAt?: string
 }
 
 export interface Vault {
@@ -55,6 +58,18 @@ export interface Vault {
   orgId: string
   name: string
   secrets: number
+  projectIds?: string[]
+  description?: string
+}
+
+export interface ProjectFileNode {
+  id: string
+  projectId: string
+  name: string
+  kind: "folder" | "file"
+  parentId: string | null
+  size?: string
+  updatedAt: string
 }
 
 export interface Configuration {
@@ -498,19 +513,136 @@ export const agents: Agent[] = [
 
 export const resources: Resource[] = [
   { id: "r1", orgId: "org-1", projectId: "proj-1", name: "floor-plan-v3.dxf", type: "file", size: "4.2 MB" },
-  { id: "r2", orgId: "org-1", projectId: "proj-2", name: "defect-labels.csv", type: "dataset", size: "128 MB" },
-  { id: "r3", orgId: "org-1", projectId: "proj-1", name: "warehouse-api-spec.yaml", type: "api", size: "24 KB" },
+  {
+    id: "r2",
+    orgId: "org-1",
+    projectId: "proj-2",
+    name: "defect-labels.csv",
+    type: "dataset",
+    size: "128 MB",
+    provider: "Snowflake",
+    status: "connected",
+    lastSyncedAt: "2026-05-19T08:30:00Z",
+  },
+  {
+    id: "r3",
+    orgId: "org-1",
+    projectId: "proj-1",
+    name: "warehouse-api-spec.yaml",
+    type: "api",
+    size: "24 KB",
+    provider: "Internal REST",
+    status: "connected",
+    lastSyncedAt: "2026-05-19T06:15:00Z",
+  },
   { id: "r4", orgId: "org-1", projectId: "proj-1", name: "fleet-routes.json", type: "file", size: "890 KB" },
-  { id: "r5", orgId: "org-1", projectId: "proj-2", name: "camera-calibration.npz", type: "dataset", size: "56 MB" },
+  {
+    id: "r5",
+    orgId: "org-1",
+    projectId: "proj-2",
+    name: "camera-calibration.npz",
+    type: "dataset",
+    size: "56 MB",
+    provider: "S3",
+    status: "syncing",
+    lastSyncedAt: "2026-05-19T09:00:00Z",
+  },
   { id: "r6", orgId: "org-1", projectId: "proj-3", name: "handoff-protocol.md", type: "file", size: "18 KB" },
-  { id: "r7", orgId: "org-2", projectId: "proj-4", name: "sensor-schema.avro", type: "api", size: "12 KB" },
-  { id: "r8", orgId: "org-2", projectId: "proj-4", name: "telemetry-sample.parquet", type: "dataset", size: "2.1 GB" },
+  {
+    id: "r7",
+    orgId: "org-2",
+    projectId: "proj-4",
+    name: "sensor-schema.avro",
+    type: "api",
+    size: "12 KB",
+    provider: "Confluent Schema Registry",
+    status: "connected",
+    lastSyncedAt: "2026-05-18T22:00:00Z",
+  },
+  {
+    id: "r8",
+    orgId: "org-2",
+    projectId: "proj-4",
+    name: "telemetry-sample.parquet",
+    type: "dataset",
+    size: "2.1 GB",
+    provider: "Databricks",
+    status: "connected",
+    lastSyncedAt: "2026-05-19T07:45:00Z",
+  },
+  {
+    id: "r9",
+    orgId: "org-1",
+    projectId: "proj-1",
+    name: "fleet-telemetry",
+    type: "dataset",
+    size: "340 GB",
+    provider: "Azure Data Lake",
+    status: "connected",
+    lastSyncedAt: "2026-05-19T09:12:00Z",
+  },
+  {
+    id: "r10",
+    orgId: "org-1",
+    projectId: "proj-1",
+    name: "routing-service",
+    type: "api",
+    size: "—",
+    provider: "gRPC",
+    status: "paused",
+    lastSyncedAt: "2026-05-15T14:00:00Z",
+  },
 ]
 
 export const vaults: Vault[] = [
-  { id: "v1", orgId: "org-1", name: "Production Keys", secrets: 12 },
-  { id: "v2", orgId: "org-1", name: "Staging Keys", secrets: 8 },
-  { id: "v3", orgId: "org-2", name: "Data Platform Keys", secrets: 6 },
+  {
+    id: "v1",
+    orgId: "org-1",
+    name: "Production Keys",
+    secrets: 12,
+    projectIds: ["proj-1", "proj-2"],
+    description: "Production API keys and signing certificates",
+  },
+  {
+    id: "v2",
+    orgId: "org-1",
+    name: "Staging Keys",
+    secrets: 8,
+    projectIds: ["proj-1", "proj-3"],
+    description: "Staging environment credentials",
+  },
+  {
+    id: "v3",
+    orgId: "org-2",
+    name: "Data Platform Keys",
+    secrets: 6,
+    projectIds: ["proj-4"],
+    description: "Warehouse and ingest pipeline secrets",
+  },
+]
+
+export const projectFiles: ProjectFileNode[] = [
+  { id: "f1", projectId: "proj-1", name: "configs", kind: "folder", parentId: null, updatedAt: "2026-05-17T12:00:00Z" },
+  { id: "f2", projectId: "proj-1", name: "data", kind: "folder", parentId: null, updatedAt: "2026-05-18T09:00:00Z" },
+  { id: "f3", projectId: "proj-1", name: "docs", kind: "folder", parentId: null, updatedAt: "2026-05-16T14:00:00Z" },
+  { id: "f4", projectId: "proj-1", name: "sim-runs", kind: "folder", parentId: "f2", updatedAt: "2026-05-19T08:00:00Z" },
+  { id: "f5", projectId: "proj-1", name: "routing-heuristics.yaml", kind: "file", parentId: "f1", size: "12 KB", updatedAt: "2026-05-19T07:30:00Z" },
+  { id: "f6", projectId: "proj-1", name: "fleet-params.json", kind: "file", parentId: "f1", size: "4 KB", updatedAt: "2026-05-18T16:00:00Z" },
+  { id: "f7", projectId: "proj-1", name: "safety-checklist.md", kind: "file", parentId: "f3", size: "18 KB", updatedAt: "2026-05-15T11:00:00Z" },
+  { id: "f8", projectId: "proj-1", name: "architecture-overview.pdf", kind: "file", parentId: "f3", size: "2.1 MB", updatedAt: "2026-05-10T09:00:00Z" },
+  { id: "f9", projectId: "proj-1", name: "overnight-run-0519.log", kind: "file", parentId: "f4", size: "890 KB", updatedAt: "2026-05-19T06:00:00Z" },
+  { id: "f10", projectId: "proj-1", name: "floor-plan-v3.dxf", kind: "file", parentId: null, size: "4.2 MB", updatedAt: "2026-05-18T10:00:00Z" },
+  { id: "f11", projectId: "proj-1", name: "fleet-routes.json", kind: "file", parentId: null, size: "890 KB", updatedAt: "2026-05-17T15:00:00Z" },
+  { id: "f12", projectId: "proj-2", name: "models", kind: "folder", parentId: null, updatedAt: "2026-05-18T12:00:00Z" },
+  { id: "f13", projectId: "proj-2", name: "labels", kind: "folder", parentId: null, updatedAt: "2026-05-17T10:00:00Z" },
+  { id: "f14", projectId: "proj-2", name: "classifier-v3.onnx", kind: "file", parentId: "f12", size: "124 MB", updatedAt: "2026-05-19T08:00:00Z" },
+  { id: "f15", projectId: "proj-2", name: "defect-taxonomy.json", kind: "file", parentId: "f13", size: "32 KB", updatedAt: "2026-05-16T13:00:00Z" },
+  { id: "f16", projectId: "proj-3", name: "protocols", kind: "folder", parentId: null, updatedAt: "2026-05-12T16:00:00Z" },
+  { id: "f17", projectId: "proj-3", name: "handoff-protocol.md", kind: "file", parentId: "f16", size: "18 KB", updatedAt: "2026-05-12T16:45:00Z" },
+  { id: "f18", projectId: "proj-4", name: "schemas", kind: "folder", parentId: null, updatedAt: "2026-05-16T11:00:00Z" },
+  { id: "f19", projectId: "proj-4", name: "sensor-events.avsc", kind: "file", parentId: "f18", size: "8 KB", updatedAt: "2026-05-16T11:30:00Z" },
+  { id: "f20", projectId: "proj-5", name: "templates", kind: "folder", parentId: null, updatedAt: "2026-05-14T10:00:00Z" },
+  { id: "f21", projectId: "proj-5", name: "inspection-report.md", kind: "file", parentId: "f20", size: "6 KB", updatedAt: "2026-05-14T10:30:00Z" },
 ]
 
 export const configurations: Configuration[] = [
@@ -833,6 +965,20 @@ export function getProjectAgents(projectId: string, agents: Agent[]) {
 
 export function getProjectResources(projectId: string, resources: Resource[]) {
   return resources.filter((resource) => resource.projectId === projectId)
+}
+
+export function getProjectIntegrations(projectId: string, resources: Resource[]) {
+  return getProjectResources(projectId, resources).filter(
+    (resource) => resource.type === "dataset" || resource.type === "api",
+  )
+}
+
+export function getProjectFiles(projectId: string, files: ProjectFileNode[] = projectFiles) {
+  return files.filter((file) => file.projectId === projectId)
+}
+
+export function getProjectVaults(projectId: string, vaults: Vault[]) {
+  return vaults.filter((vault) => vault.projectIds?.includes(projectId))
 }
 
 export function getProjectTaskCount(projectId: string) {
