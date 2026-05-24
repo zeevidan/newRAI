@@ -15,6 +15,7 @@ import {
   vaults as initialVaults,
   type Agent,
   type Configuration,
+  type EntityStatus,
   type Organization,
   type Project,
   type Resource,
@@ -42,8 +43,46 @@ interface AppContextValue {
   vaults: Vault[]
   configurations: Configuration[]
   addProject: (name: string, description: string) => void
-  addUser: (name: string, email: string, role: string) => void
-  addAgent: (name: string, model: string) => void
+  addUser: (input: {
+    name: string
+    email: string
+    role: string
+    title?: string
+    managerId?: string | null
+    projectId?: string
+  }) => string
+  addAgent: (input: {
+    name: string
+    title?: string
+    model: string
+    status?: EntityStatus
+    managerId?: string | null
+    projectId?: string
+  }) => string
+  updateUser: (
+    id: string,
+    input: {
+      name?: string
+      email?: string
+      role?: string
+      title?: string
+      managerId?: string | null
+      projectId?: string
+      onProject?: boolean
+    },
+  ) => void
+  updateAgent: (
+    id: string,
+    input: {
+      name?: string
+      title?: string
+      model?: string
+      status?: EntityStatus
+      managerId?: string | null
+      projectId?: string
+      onProject?: boolean
+    },
+  ) => void
   addResource: (name: string, type: Resource["type"]) => void
   addVault: (name: string) => void
   addConfiguration: (key: string, environment: string) => void
@@ -125,17 +164,83 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setProjectList((prev) => [project, ...prev])
       setSelectedProjectId(project.id)
     },
-    addUser: (name, email, role) => {
+    addUser: (input) => {
+      const id = `u-${Date.now()}`
       setUserList((prev) => [
         ...prev,
-        { id: `u-${Date.now()}`, orgId: currentOrgId, name, email, role },
+        {
+          id,
+          orgId: currentOrgId,
+          name: input.name,
+          email: input.email,
+          role: input.role,
+          title: input.title ?? input.role,
+          managerId: input.managerId ?? null,
+          projectIds: input.projectId ? [input.projectId] : [],
+        },
       ])
+      return id
     },
-    addAgent: (name, model) => {
+    addAgent: (input) => {
+      const id = `a-${Date.now()}`
       setAgentList((prev) => [
         ...prev,
-        { id: `a-${Date.now()}`, orgId: currentOrgId, name, model, status: "active" },
+        {
+          id,
+          orgId: currentOrgId,
+          name: input.name,
+          title: input.title ?? "Project agent",
+          model: input.model,
+          status: input.status ?? "active",
+          managerId: input.managerId ?? null,
+          projectIds: input.projectId ? [input.projectId] : [],
+        },
       ])
+      return id
+    },
+    updateUser: (id, input) => {
+      setUserList((prev) =>
+        prev.map((user) => {
+          if (user.id !== id) return user
+          const projectIds = input.projectId
+            ? input.onProject
+              ? Array.from(new Set([...(user.projectIds ?? []), input.projectId]))
+              : (user.projectIds ?? []).filter((pid) => pid !== input.projectId)
+            : user.projectIds
+
+          return {
+            ...user,
+            name: input.name ?? user.name,
+            email: input.email ?? user.email,
+            role: input.role ?? user.role,
+            title: input.title ?? user.title,
+            managerId: input.managerId !== undefined ? input.managerId : user.managerId,
+            projectIds,
+          }
+        }),
+      )
+    },
+    updateAgent: (id, input) => {
+      setAgentList((prev) =>
+        prev.map((agent) => {
+          if (agent.id !== id) return agent
+          const projectIds = input.projectId
+            ? input.onProject
+              ? Array.from(new Set([...(agent.projectIds ?? []), input.projectId]))
+              : (agent.projectIds ?? []).filter((pid) => pid !== input.projectId)
+            : agent.projectIds
+
+          return {
+            ...agent,
+            name: input.name ?? agent.name,
+            title: input.title ?? agent.title,
+            model: input.model ?? agent.model,
+            status: input.status ?? agent.status,
+            managerId: input.managerId !== undefined ? input.managerId : agent.managerId,
+            projectIds,
+          }
+        }),
+      )
     },
     addResource: (name, type) => {
       setResourceList((prev) => [

@@ -87,6 +87,44 @@ export interface ActivityItem {
   time: string
 }
 
+export interface DirectoryProfile {
+  userId: string
+  upn: string
+  employeeId: string
+  department: string
+  office: string
+  adManagerName: string
+  groups: string[]
+  accountEnabled: boolean
+  lastSyncedAt: string
+  source: "Azure AD" | "Active Directory"
+}
+
+export interface DirectoryCandidate {
+  id: string
+  orgId: string
+  displayName: string
+  email: string
+  jobTitle: string
+  department: string
+  office: string
+  upn: string
+}
+
+export interface AgentLogEntry {
+  id: string
+  level: "info" | "warn" | "error" | "debug"
+  message: string
+  timestamp: string
+}
+
+export interface AgentConfigEntry {
+  key: string
+  value: string
+  environment: string
+  description?: string
+}
+
 export type OrgChartMemberKind = "user" | "agent"
 
 export interface OrgChartMember {
@@ -562,6 +600,223 @@ export const projectActivity: Record<string, ActivityItem[]> = {
   "proj-5": [
     { id: "act10", action: "onboarded inspection QA agent", actor: "Elena Vasquez", time: "May 15" },
   ],
+}
+
+export const directoryProfiles: Record<string, DirectoryProfile> = {
+  u1: {
+    userId: "u1",
+    upn: "alex.rivera@acme.io",
+    employeeId: "EMP-1042",
+    department: "Engineering",
+    office: "San Francisco HQ",
+    adManagerName: "—",
+    groups: ["RAI-Admins", "Eng-Directors", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+  u2: {
+    userId: "u2",
+    upn: "morgan.lee@acme.io",
+    employeeId: "EMP-2187",
+    department: "Robotics",
+    office: "San Francisco HQ",
+    adManagerName: "Sam Okonkwo",
+    groups: ["Robotics-Team", "Atlas-Contributors", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+  u3: {
+    userId: "u3",
+    upn: "sam.okonkwo@acme.io",
+    employeeId: "EMP-1834",
+    department: "Product",
+    office: "San Francisco HQ",
+    adManagerName: "Alex Rivera",
+    groups: ["PM-Team", "Atlas-Leads", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+  u4: {
+    userId: "u4",
+    upn: "jordan.kim@acme.io",
+    employeeId: "EMP-2291",
+    department: "Design",
+    office: "Remote — Seattle",
+    adManagerName: "Sam Okonkwo",
+    groups: ["Design-Team", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+  u5: {
+    userId: "u5",
+    upn: "dana.patel@acme.io",
+    employeeId: "EMP-2410",
+    department: "Machine Learning",
+    office: "San Francisco HQ",
+    adManagerName: "Sam Okonkwo",
+    groups: ["ML-Team", "Atlas-Contributors", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+  u9: {
+    userId: "u9",
+    upn: "priya.sharma@acme.io",
+    employeeId: "EMP-2555",
+    department: "Computer Vision",
+    office: "Austin Lab",
+    adManagerName: "Sam Okonkwo",
+    groups: ["CV-Team", "Sentinel-Contributors", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+  u10: {
+    userId: "u10",
+    upn: "chris.alvarez@acme.io",
+    employeeId: "EMP-2601",
+    department: "Field Systems",
+    office: "Chicago Field Office",
+    adManagerName: "Sam Okonkwo",
+    groups: ["Field-Ops", "Relay-Contributors", "All-Employees"],
+    accountEnabled: true,
+    lastSyncedAt: "2026-05-19T08:00:00Z",
+    source: "Azure AD",
+  },
+}
+
+export const directoryCandidates: DirectoryCandidate[] = [
+  {
+    id: "ad-501",
+    orgId: "org-1",
+    displayName: "Riley Torres",
+    email: "riley.torres@acme.io",
+    jobTitle: "Systems Integrator",
+    department: "Robotics",
+    office: "San Francisco HQ",
+    upn: "riley.torres@acme.io",
+  },
+  {
+    id: "ad-502",
+    orgId: "org-1",
+    displayName: "Nina Hoffmann",
+    email: "nina.hoffmann@acme.io",
+    jobTitle: "Safety Engineer",
+    department: "Operations",
+    office: "Austin Lab",
+    upn: "nina.hoffmann@acme.io",
+  },
+  {
+    id: "ad-503",
+    orgId: "org-1",
+    displayName: "Omar Hassan",
+    email: "omar.hassan@acme.io",
+    jobTitle: "Data Analyst",
+    department: "Analytics",
+    office: "Remote — Denver",
+    upn: "omar.hassan@acme.io",
+  },
+]
+
+export const agentActivity: Record<string, ActivityItem[]> = {
+  a1: [
+    { id: "aa1", action: "rebalanced fleet routes for zone B", actor: "Manager", time: "Today, 10:22 AM" },
+    { id: "aa2", action: "escalated congestion alert to Morgan Lee", actor: "Manager", time: "Today, 8:05 AM" },
+    { id: "aa3", action: "completed nightly route optimization", actor: "Manager", time: "Yesterday" },
+  ],
+  a4: [
+    { id: "aa4", action: "published runbook section 4.2", actor: "Writer", time: "Today, 9:40 AM" },
+    { id: "aa5", action: "drafted failover procedure update", actor: "Writer", time: "May 17" },
+  ],
+  a5: [
+    { id: "aa6", action: "passed safety compliance scan", actor: "QA", time: "Today, 7:15 AM" },
+    { id: "aa7", action: "flagged 2 route edge cases", actor: "QA", time: "May 18" },
+  ],
+  a2: [
+    { id: "aa8", action: "inspected 1,240 units on line 4", actor: "QA", time: "Today, 11:30 AM" },
+    { id: "aa9", action: "updated defect threshold to 0.98", actor: "QA", time: "Yesterday" },
+  ],
+}
+
+export const agentLogs: Record<string, AgentLogEntry[]> = {
+  a1: [
+    { id: "al1", level: "info", message: "Route optimization completed in 1.2s (142 nodes)", timestamp: "2026-05-19T10:22:14Z" },
+    { id: "al2", level: "warn", message: "Zone B congestion above threshold (87%)", timestamp: "2026-05-19T08:05:33Z" },
+    { id: "al3", level: "info", message: "Heartbeat OK — model gpt-4.1, latency 340ms p95", timestamp: "2026-05-19T08:00:00Z" },
+    { id: "al4", level: "debug", message: "Loaded config MAX_FLEET_SIZE=48", timestamp: "2026-05-19T07:59:58Z" },
+  ],
+  a4: [
+    { id: "al5", level: "info", message: "Generated runbook section 4.2 (2,140 tokens)", timestamp: "2026-05-19T09:40:01Z" },
+    { id: "al6", level: "info", message: "Saved draft to project resource store", timestamp: "2026-05-19T09:40:05Z" },
+  ],
+  a5: [
+    { id: "al7", level: "info", message: "Compliance scan passed — 0 violations", timestamp: "2026-05-19T07:15:22Z" },
+    { id: "al8", level: "warn", message: "Edge case EC-441 requires human review", timestamp: "2026-05-18T16:44:10Z" },
+    { id: "al9", level: "error", message: "Timeout on route validation batch (retry 1/3)", timestamp: "2026-05-18T14:02:00Z" },
+  ],
+}
+
+export const agentConfigurations: Record<string, AgentConfigEntry[]> = {
+  a1: [
+    { key: "MAX_FLEET_SIZE", value: "48", environment: "production", description: "Maximum active robots per zone" },
+    { key: "ROUTING_TIMEOUT_MS", value: "5000", environment: "production", description: "Route calculation timeout" },
+    { key: "REPLAN_INTERVAL_SEC", value: "30", environment: "staging", description: "Background replan cadence" },
+    { key: "ESCALATION_THRESHOLD", value: "0.85", environment: "production", description: "Congestion alert threshold" },
+  ],
+  a4: [
+    { key: "DOC_TEMPLATE_VERSION", value: "2.1", environment: "production", description: "Runbook template version" },
+    { key: "MAX_OUTPUT_TOKENS", value: "4096", environment: "global", description: "Generation limit per section" },
+  ],
+  a5: [
+    { key: "COMPLIANCE_RULESET", value: "warehouse-safety-v3", environment: "production", description: "Active rule pack" },
+    { key: "STRICT_MODE", value: "true", environment: "production", description: "Block on any violation" },
+    { key: "REVIEW_QUEUE", value: "safety-review", environment: "staging", description: "Human review queue name" },
+  ],
+}
+
+export function getDirectoryProfile(userId: string) {
+  return directoryProfiles[userId]
+}
+
+export function getAvailableDirectoryCandidates(
+  orgId: string,
+  users: User[],
+  _projectId: string,
+) {
+  const orgUserEmails = new Set(
+    users.filter((user) => user.orgId === orgId).map((user) => user.email.toLowerCase()),
+  )
+  return directoryCandidates.filter(
+    (candidate) =>
+      candidate.orgId === orgId && !orgUserEmails.has(candidate.email.toLowerCase()),
+  )
+}
+
+export function getAgentActivity(agentId: string) {
+  return agentActivity[agentId] ?? []
+}
+
+export function getAgentLogs(agentId: string) {
+  return agentLogs[agentId] ?? []
+}
+
+export function getAgentConfigurations(agentId: string) {
+  return agentConfigurations[agentId] ?? []
+}
+
+export function resolveMemberName(
+  id: string,
+  users: User[],
+  agents: Agent[],
+): string | null {
+  const user = users.find((item) => item.id === id)
+  if (user) return user.name
+  const agent = agents.find((item) => item.id === id)
+  return agent?.name ?? null
 }
 
 export function isOnProject(entity: { projectIds?: string[] }, projectId: string) {

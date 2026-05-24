@@ -1,0 +1,389 @@
+import { useEffect, useMemo, useState } from "react"
+import {
+  Activity,
+  Bot,
+  FileCode2,
+  ScrollText,
+  Settings2,
+} from "lucide-react"
+import { useApp } from "@/context/app-context"
+import {
+  getAgentActivity,
+  getAgentConfigurations,
+  getAgentLogs,
+  resolveMemberName,
+  type EntityStatus,
+  type OrgChartMember,
+} from "@/data/mock"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+const AGENT_ROLES = ["Manager", "QA", "Writer", "Analyst"] as const
+const MODELS = ["gpt-4.1", "gpt-4.1-mini", "claude-sonnet"] as const
+
+function getChartRootId(members: OrgChartMember[], excludeId?: string) {
+  return members.find((member) => !member.managerId && member.id !== excludeId)?.id ?? null
+}
+
+function logLevelVariant(level: string) {
+  if (level === "error") return "destructive" as const
+  if (level === "warn") return "outline" as const
+  return "secondary" as const
+}
+
+interface AgentDetailPaneProps {
+  agentId: string
+  projectId: string
+  orgChartMembers: OrgChartMember[]
+}
+
+export function AgentDetailPane({
+  agentId,
+  projectId,
+  orgChartMembers,
+}: AgentDetailPaneProps) {
+  const { users, agents, updateAgent } = useApp()
+  const agent = agents.find((item) => item.id === agentId)
+
+  const [name, setName] = useState(agent?.name ?? "Manager")
+  const [title, setTitle] = useState(agent?.title ?? "")
+  const [model, setModel] = useState(agent?.model ?? "gpt-4.1")
+  const [status, setStatus] = useState<EntityStatus>(agent?.status ?? "active")
+  const [managerId, setManagerId] = useState(agent?.managerId ?? "")
+  const [saved, setSaved] = useState(false)
+
+  const activity = getAgentActivity(agentId)
+  const logs = getAgentLogs(agentId)
+  const configurations = getAgentConfigurations(agentId)
+
+  const chartRootId = useMemo(
+    () => getChartRootId(orgChartMembers, agentId),
+    [orgChartMembers, agentId],
+  )
+  const isRoot = agentId === chartRootId
+  const allowTopLevel = !chartRootId || isRoot
+
+  const managerOptions = useMemo(
+    () => [
+      ...users.map((item) => ({ id: item.id, label: item.name, kind: "user" as const })),
+      ...agents
+        .filter((item) => item.id !== agentId)
+        .map((item) => ({ id: item.id, label: item.name, kind: "agent" as const })),
+    ],
+    [users, agents, agentId],
+  )
+
+  useEffect(() => {
+    if (!agent) return
+    setName(agent.name)
+    setTitle(agent.title ?? "")
+    setModel(agent.model)
+    setStatus(agent.status)
+    setManagerId(agent.managerId ?? "")
+    setSaved(false)
+  }, [agent])
+
+  if (!agent) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Agent not found.
+        </CardContent>
+      </Card>
+    )
+  }
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    const resolvedManagerId = allowTopLevel
+      ? managerId || null
+      : managerId || chartRootId
+
+    updateAgent(agentId, {
+      name,
+      title: title.trim() || "Project agent",
+      model,
+      status,
+      managerId: resolvedManagerId,
+      projectId,
+      onProject: true,
+    })
+    setSaved(true)
+  }
+
+  const managerName = agent.managerId
+    ? resolveMemberName(agent.managerId, users, agents)
+    : null
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div className="flex items-start gap-4">
+            <div className="flex size-14 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600">
+              <Bot className="size-7" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="text-xl">{agent.name}</CardTitle>
+                <Badge
+                  variant={agent.status === "active" ? "default" : "outline"}
+                  className="capitalize"
+                >
+                  {agent.status}
+                </Badge>
+              </div>
+              <CardDescription className="mt-1">
+                {agent.title} · {agent.model}
+              </CardDescription>
+              {managerName && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Reports to {managerName}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList variant="line" className="h-10 w-full justify-start bg-transparent">
+          <TabsTrigger value="overview">
+            <Bot className="size-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="configurations">
+            <Settings2 className="size-4" />
+            Configurations
+          </TabsTrigger>
+          <TabsTrigger value="activity">
+            <Activity className="size-4" />
+            Activity
+          </TabsTrigger>
+          <TabsTrigger value="logs">
+            <ScrollText className="size-4" />
+            Logs
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Agent settings</CardTitle>
+              <CardDescription>
+                Update functional role, model, and org chart placement.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSave} className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Functional role</Label>
+                  <Select value={name} onValueChange={(value) => value && setName(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AGENT_ROLES.map((agentRole) => (
+                        <SelectItem key={agentRole} value={agentRole}>
+                          {agentRole}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="agent-title">Title</Label>
+                  <Input
+                    id="agent-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Fleet routing manager"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Model</Label>
+                  <Select value={model} onValueChange={(value) => value && setModel(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MODELS.map((modelOption) => (
+                        <SelectItem key={modelOption} value={modelOption}>
+                          {modelOption}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={status}
+                    onValueChange={(value) => value && setStatus(value as EntityStatus)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="paused">Paused</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Reports to</Label>
+                  <Select
+                    value={managerId || "none"}
+                    onValueChange={(value) => {
+                      if (!value) return
+                      setManagerId(value === "none" ? "" : value)
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allowTopLevel && (
+                        <SelectItem value="none">No manager (top level)</SelectItem>
+                      )}
+                      {managerOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.label} ({option.kind === "agent" ? "agent" : "person"})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 md:col-span-2">
+                  <Button type="submit">Save changes</Button>
+                  {saved && (
+                    <span className="text-sm text-muted-foreground">Saved</span>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="configurations" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileCode2 className="size-4" />
+                Agent configurations
+              </CardTitle>
+              <CardDescription>
+                Environment-specific settings bound to this agent.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {configurations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No configurations defined.</p>
+              ) : (
+                configurations.map((config) => (
+                  <div
+                    key={`${config.key}-${config.environment}`}
+                    className="flex flex-col gap-2 rounded-lg border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <code className="font-mono text-sm text-primary">{config.key}</code>
+                      {config.description && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {config.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">{config.value}</span>
+                      <Badge variant="outline">{config.environment}</Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Recent activity</CardTitle>
+              <CardDescription>Actions performed by this agent on the project.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {activity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No activity recorded.</p>
+              ) : (
+                activity.map((item) => (
+                  <div key={item.id} className="flex gap-3">
+                    <div className="mt-1.5 size-2 shrink-0 rounded-full bg-indigo-500" />
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-medium">{item.actor}</span> {item.action}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{item.time}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="logs" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Runtime logs</CardTitle>
+              <CardDescription>Structured log output from agent execution.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {logs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No logs available.</p>
+              ) : (
+                logs.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="rounded-lg border border-border bg-muted/20 px-4 py-3 font-mono text-xs"
+                  >
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <Badge variant={logLevelVariant(entry.level)} className="uppercase">
+                        {entry.level}
+                      </Badge>
+                      <span className="text-muted-foreground">
+                        {new Date(entry.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-foreground/90">{entry.message}</p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

@@ -130,6 +130,10 @@
     }
 }
 
+.rai-org-chart .node {
+  cursor: pointer;
+}
+
 .rai-org-chart {
   margin: 0;
   padding: 0;
@@ -143,4 +147,11 @@
 
 .rai-org-chart .node-button-g {
   display: none;
+}
+
+/* Team member detail sheet — wide panel for parameter-heavy layouts */
+[data-slot="sheet-content"][data-size="wide"][data-side="right"],
+[data-slot="sheet-content"][data-size="wide"][data-side="left"] {
+  width: min(1200px, 92vw) !important;
+  max-width: 1200px !important;
 }

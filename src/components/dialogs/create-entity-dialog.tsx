@@ -71,10 +71,10 @@ export function CreateEntityDialog({ type, open, onOpenChange }: CreateEntityDia
         addProject(name, description)
         break
       case "user":
-        addUser(name, email, role)
+        addUser({ name, email, role })
         break
       case "agent":
-        addAgent(name, model)
+        addAgent({ name, model })
         break
       case "resource":
         addResource(name, resourceType)

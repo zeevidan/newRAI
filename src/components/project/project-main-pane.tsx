@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   Activity,
   CircleDollarSign,
@@ -9,7 +10,6 @@ import {
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
 import {
-  buildProjectOrgChart,
   formatCurrency,
   getProjectActiveAgentCount,
   getProjectAgents,
@@ -21,7 +21,7 @@ import {
   projectMessages,
   projectTasks,
 } from "@/data/mock"
-import { OrgChart, TeamDirectory } from "@/components/team/org-chart"
+import { TeamTab } from "@/components/team/team-tab"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -58,13 +58,13 @@ export function ProjectMainPane() {
   const projectUsers = getProjectUsers(selectedProject.id, users)
   const projectAgents = getProjectAgents(selectedProject.id, agents)
   const projectResources = getProjectResources(selectedProject.id, resources)
-  const orgChartMembers = buildProjectOrgChart(selectedProject.id, users, agents)
   const peopleCount = getProjectPeopleCount(selectedProject.id, users, agents)
   const taskCount = getProjectTaskCount(selectedProject.id)
   const activeAgentCount = getProjectActiveAgentCount(selectedProject.id, agents)
   const budgetPct = Math.round(
     (selectedProject.budgetUsed / selectedProject.budgetTotal) * 100,
   )
+  const [activeTab, setActiveTab] = useState("overview")
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -100,7 +100,11 @@ export function ProjectMainPane() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="shrink-0 border-b border-border px-6">
           <TabsList variant="line" className="h-11 w-full justify-start bg-transparent">
             <TabsTrigger value="overview">
@@ -187,9 +191,13 @@ export function ProjectMainPane() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="team" className="mt-0 space-y-6">
-              <OrgChart members={orgChartMembers} />
-              <TeamDirectory users={projectUsers} agents={projectAgents} />
+            <TabsContent value="team" className="mt-0">
+              <TeamTab
+                projectId={selectedProject.id}
+                projectName={selectedProject.name}
+                isActive={activeTab === "team"}
+                onBackToProject={() => setActiveTab("overview")}
+              />
             </TabsContent>
 
             <TabsContent value="messages" className="mt-0">
