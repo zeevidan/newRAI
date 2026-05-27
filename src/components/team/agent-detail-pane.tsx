@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import {
   Activity,
-  Bot,
   FileCode2,
   ScrollText,
   Settings2,
@@ -12,9 +11,14 @@ import {
   getAgentConfigurations,
   getAgentLogs,
   resolveMemberName,
+  type AgentAvatar,
   type EntityStatus,
   type OrgChartMember,
 } from "@/data/mock"
+import {
+  AgentAvatarButton,
+  AgentAvatarEditorDialog,
+} from "@/components/team/agent-avatar-editor-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -70,6 +74,7 @@ export function AgentDetailPane({
   const [model, setModel] = useState(agent?.model ?? "gpt-4.1")
   const [status, setStatus] = useState<EntityStatus>(agent?.status ?? "active")
   const [managerId, setManagerId] = useState<string | null>(agent?.managerId ?? null)
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
 
   const activity = getAgentActivity(agentId)
   const logs = getAgentLogs(agentId)
@@ -119,6 +124,14 @@ export function AgentDetailPane({
     onSaved?.()
   }
 
+  function handleAvatarSave(avatar: AgentAvatar) {
+    updateAgent(agentId, {
+      avatar,
+      projectId,
+      onProject: true,
+    })
+  }
+
   const managerName = agent.managerId
     ? resolveMemberName(agent.managerId, users, agents)
     : null
@@ -128,9 +141,13 @@ export function AgentDetailPane({
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div className="flex items-start gap-4">
-            <div className="flex size-14 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600">
-              <Bot className="size-7" />
-            </div>
+            <AgentAvatarButton
+              avatar={agent.avatar}
+              name={agent.name}
+              status={agent.status}
+              size="lg"
+              onClick={() => setAvatarDialogOpen(true)}
+            />
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-xl">{agent.name}</CardTitle>
@@ -154,10 +171,17 @@ export function AgentDetailPane({
         </CardHeader>
       </Card>
 
+      <AgentAvatarEditorDialog
+        open={avatarDialogOpen}
+        onOpenChange={setAvatarDialogOpen}
+        name={agent.name}
+        avatar={agent.avatar}
+        onSave={handleAvatarSave}
+      />
+
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList variant="line" className="h-10 w-full justify-start bg-transparent">
           <TabsTrigger value="overview">
-            <Bot className="size-4" />
             Overview
           </TabsTrigger>
           <TabsTrigger value="configurations">

@@ -15,6 +15,7 @@ import {
   users as initialUsers,
   vaults as initialVaults,
   type Agent,
+  type AgentAvatar,
   type Configuration,
   type EntityStatus,
   type MockSessionProfileKey,
@@ -63,6 +64,7 @@ interface AppContextValue {
     status?: EntityStatus
     managerId?: string | null
     projectId?: string
+    avatar?: AgentAvatar
   }) => string
   updateUser: (
     id: string,
@@ -86,6 +88,7 @@ interface AppContextValue {
       managerId?: string | null
       projectId?: string
       onProject?: boolean
+      avatar?: AgentAvatar
     },
   ) => void
   addResource: (name: string, type: Resource["type"]) => void
@@ -232,6 +235,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: input.status ?? "active",
           managerId: input.managerId ?? null,
           projectIds: input.projectId ? [input.projectId] : [],
+          avatar: input.avatar,
         },
       ])
       return id
@@ -276,6 +280,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             status: input.status ?? agent.status,
             managerId: input.managerId !== undefined ? input.managerId : agent.managerId,
             projectIds,
+            avatar: input.avatar !== undefined ? input.avatar : agent.avatar,
           }
         }),
       )

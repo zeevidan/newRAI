@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { OrgChartMember, OrgChartMemberKind } from "@/data/mock"
+import { getOrgChartAvatarMarkup } from "@/components/team/agent-avatar"
 import { cn } from "@/lib/utils"
 
 const BRAND = "#0049FF"
@@ -26,6 +27,7 @@ interface ChartDatum {
   kind: "user" | "agent"
   model?: string
   status?: string
+  avatar?: OrgChartMember["avatar"]
   _expanded?: boolean
 }
 
@@ -62,6 +64,7 @@ function membersToChartData(members: OrgChartMember[]): ChartDatum[] {
     kind: member.kind,
     model: member.model,
     status: member.status,
+    avatar: member.avatar,
     _expanded: true,
   }))
 
@@ -95,20 +98,11 @@ function renderNodeContent(node: {
       ? BRAND
       : "rgba(0,73,255,0.1)"
   const avatarColor = isAgent || isRoot ? "#ffffff" : BRAND
-  const badgeBg = isAgent
-    ? isPaused
-      ? "rgba(148,163,184,0.2)"
-      : "rgba(99,102,241,0.12)"
-    : isRoot
-      ? BRAND
-      : "rgba(0,73,255,0.08)"
-  const badgeColor = isAgent
-    ? isPaused
-      ? "#64748b"
-      : "#6366f1"
-    : isRoot
-      ? "#ffffff"
-      : BRAND
+  const subtitle = isAgent ? data.model ?? "—" : data.title
+  const avatarInner = isAgent
+    ? getOrgChartAvatarMarkup(data.avatar, data.name)
+    : data.initials
+  const avatarIsSvg = avatarInner.startsWith("<svg")
 
   return `
     <div style="width:${width}px;height:${height}px;display:flex;align-items:center;justify-content:center;font-family:'Geist Variable',system-ui,sans-serif;cursor:pointer;">
@@ -119,7 +113,7 @@ function renderNodeContent(node: {
         border:1px solid ${isAgent ? "rgba(99,102,241,0.35)" : isRoot ? "rgba(0,73,255,0.35)" : "rgba(15,23,42,0.1)"};
         border-style:${isAgent ? "dashed" : "solid"};
         box-shadow:0 1px 2px rgba(15,23,42,0.06), 0 4px 12px rgba(15,23,42,0.04);
-        padding:14px 12px 12px;
+        padding:14px 12px;
         text-align:center;
         cursor:pointer;
         ${isRoot ? "box-shadow:0 0 0 2px rgba(0,73,255,0.12), 0 4px 16px rgba(0,73,255,0.12);" : ""}
@@ -130,18 +124,12 @@ function renderNodeContent(node: {
           background:${avatarBg};
           color:${avatarColor};
           display:flex;align-items:center;justify-content:center;
-          margin:0 auto 10px;font-weight:600;font-size:${isAgent ? "11px" : "13px"};
+          margin:0 auto 10px;font-weight:600;font-size:${avatarIsSvg ? "0" : isAgent ? "11px" : "13px"};
+          line-height:1;overflow:hidden;flex-shrink:0;
           ${isRoot && !isAgent ? "box-shadow:0 0 0 3px rgba(0,73,255,0.15);" : ""}
-        ">${data.initials}</div>
-        <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.2;margin-bottom:3px;">${data.name}</div>
-        <div style="font-size:11px;color:#64748b;line-height:1.3;margin-bottom:8px;">${data.title}</div>
-        <div style="
-          display:inline-block;padding:2px 8px;border-radius:6px;
-          background:${badgeBg};
-          color:${badgeColor};
-          font-size:10px;font-weight:500;letter-spacing:0.02em;text-transform:capitalize;
-        ">${isAgent ? data.title : data.role}</div>
-        ${isAgent && data.model ? `<div style="font-size:10px;color:#94a3b8;margin-top:6px;">${data.model}</div>` : ""}
+        ">${avatarIsSvg ? `<span style="display:flex;align-items:center;justify-content:center;width:16px;height:16px;line-height:0;">${avatarInner}</span>` : avatarInner}</div>
+        <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.2;margin-bottom:4px;">${data.name}</div>
+        <div style="font-size:11px;color:#64748b;line-height:1.3;">${subtitle}</div>
       </div>
     </div>
   `
@@ -156,7 +144,7 @@ function createChart(
     .container(container)
     .data(data)
     .nodeWidth(() => 220)
-    .nodeHeight((node) => (node.data.kind === "agent" ? 148 : 130))
+    .nodeHeight(() => 112)
     .childrenMargin(() => 56)
     .neighbourMargin(() => 28)
     .compact(false)

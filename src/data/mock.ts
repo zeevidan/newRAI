@@ -39,6 +39,16 @@ export interface Agent {
   title?: string
   managerId?: string | null
   projectIds?: string[]
+  avatar?: AgentAvatar
+}
+
+export type AgentAvatarType = "initials" | "icon" | "image"
+
+export interface AgentAvatar {
+  type: AgentAvatarType
+  initials?: string
+  icon?: string
+  imageUrl?: string
 }
 
 export interface Resource {
@@ -152,6 +162,7 @@ export interface OrgChartMember {
   kind: OrgChartMemberKind
   model?: string
   status?: EntityStatus
+  avatar?: AgentAvatar
 }
 
 export type PlatformRole = "member" | "org_admin" | "platform_admin"
@@ -466,6 +477,7 @@ export const agents: Agent[] = [
     title: "Safety compliance checker",
     managerId: "u3",
     projectIds: ["proj-1"],
+    avatar: { type: "icon", icon: "shield" },
   },
   // Sentinel Vision — production-line defect detection
   {
@@ -1201,6 +1213,7 @@ export function buildProjectOrgChart(
       kind: "agent" as const,
       model: agent.model,
       status: agent.status,
+      avatar: agent.avatar,
     }))
 
   const members = [...chartUsers, ...chartAgents]

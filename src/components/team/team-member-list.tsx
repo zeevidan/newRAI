@@ -7,7 +7,8 @@ import {
   Search,
   UserRound,
 } from "lucide-react"
-import type { Agent, EntityStatus, OrgChartMemberKind, User } from "@/data/mock"
+import type { Agent, AgentAvatar, EntityStatus, OrgChartMemberKind, User } from "@/data/mock"
+import { AgentAvatarDisplay } from "@/components/team/agent-avatar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -29,6 +30,7 @@ export interface TeamMemberRow {
   email?: string
   model?: string
   status?: EntityStatus
+  avatar?: AgentAvatar
 }
 
 type SortKey = "name" | "type" | "title" | "role"
@@ -61,6 +63,7 @@ export function buildTeamMemberRows(users: User[], agents: Agent[]): TeamMemberR
       role: agent.name,
       model: agent.model,
       status: agent.status,
+      avatar: agent.avatar,
     })),
   ]
 }
@@ -240,9 +243,12 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
             >
               <div className="flex min-w-0 items-center gap-3">
                 {row.kind === "agent" ? (
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600">
-                    <Bot className="size-4" />
-                  </div>
+                  <AgentAvatarDisplay
+                    avatar={row.avatar}
+                    name={row.name}
+                    status={row.status}
+                    size="sm"
+                  />
                 ) : (
                   <Avatar className="size-8 shrink-0">
                     <AvatarFallback className="bg-primary/10 text-[10px] font-medium text-primary">

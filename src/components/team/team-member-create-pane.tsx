@@ -24,6 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
+import {
+  AgentAvatarPicker,
+  defaultAgentAvatar,
+} from "@/components/team/agent-avatar"
+import type { AgentAvatar } from "@/data/mock"
 
 const AGENT_ROLES = ["Manager", "QA", "Writer", "Analyst"] as const
 const USER_ROLES = ["Admin", "Engineer", "PM", "Designer"] as const
@@ -69,6 +74,7 @@ export function TeamMemberCreatePane({
   const [name, setName] = useState("Manager")
   const [title, setTitle] = useState("Project agent")
   const [model, setModel] = useState("gpt-4.1")
+  const [avatar, setAvatar] = useState<AgentAvatar>(() => defaultAgentAvatar("Manager"))
   const [reportsTo, setReportsTo] = useState<string | null>(managerId ?? chartRootId ?? null)
 
   const filteredCandidates = directoryCandidates.filter((candidate) => {
@@ -99,6 +105,7 @@ export function TeamMemberCreatePane({
         status: "active",
         managerId: resolvedManagerId,
         projectId,
+        avatar,
       })
       onCreated("agent", id)
       return
@@ -125,9 +132,20 @@ export function TeamMemberCreatePane({
     <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
           {isAgent ? (
             <>
+              <AgentAvatarPicker value={avatar} name={name} onChange={setAvatar} />
+
               <div className="grid gap-2">
                 <Label>Functional role</Label>
-                <Select value={name} onValueChange={(value) => value && setName(value)}>
+                <Select
+                  value={name}
+                  onValueChange={(value) => {
+                    if (!value) return
+                    setName(value)
+                    setAvatar((current) =>
+                      current.type === "initials" ? defaultAgentAvatar(value) : current,
+                    )
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
