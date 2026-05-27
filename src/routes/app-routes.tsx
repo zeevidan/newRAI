@@ -8,6 +8,7 @@ import {
   ProjectWorkspaceLayout,
 } from "@/components/layout/project-workspace-layout"
 import { ProjectWorkspaceShell } from "@/components/layout/project-workspace-shell"
+import { AdminSkillsPage } from "@/components/admin/admin-skills-page"
 import {
   AdminOrganizationsPage,
   AdminOverviewPage,
@@ -38,6 +39,7 @@ export function AppRoutes() {
             <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="vaults" element={<AdminVaultsPage />} />
             <Route path="policies" element={<AdminPoliciesPage />} />
+            <Route path="skills" element={<AdminSkillsPage />} />
             <Route element={<RequirePlatformAdmin />}>
               <Route path="organizations" element={<AdminOrganizationsPage />} />
               <Route

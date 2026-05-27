@@ -5,6 +5,7 @@ import {
   platformConfigurations,
   users as allUsers,
 } from "@/data/mock"
+import { getOrgLibrarySkills } from "@/data/skills-mock"
 import { canAccessPlatformAdmin } from "@/lib/auth"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,7 +49,7 @@ export function AdminOverviewPage() {
       title="Admin overview"
       description={`Managing ${currentOrg.name}.`}
     >
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Users</CardDescription>
@@ -65,6 +66,14 @@ export function AdminOverviewPage() {
           <CardHeader className="pb-2">
             <CardDescription>Vaults</CardDescription>
             <CardTitle className="text-2xl">{vaults.length}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Skills</CardDescription>
+            <CardTitle className="text-2xl">
+              {getOrgLibrarySkills(currentOrg.id).length}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>

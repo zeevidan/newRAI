@@ -6,6 +6,7 @@ import {
   ScrollText,
   Settings2,
   SlidersHorizontal,
+  Sparkles,
   Users,
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
@@ -20,6 +21,7 @@ const orgNavItems = [
   { to: "/admin/settings", label: "Settings", icon: Settings2 },
   { to: "/admin/vaults", label: "Vaults", icon: KeyRound },
   { to: "/admin/policies", label: "Policies", icon: ScrollText },
+  { to: "/admin/skills", label: "Skills", icon: Sparkles },
 ] as const
 
 const platformNavItems = [
