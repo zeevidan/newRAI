@@ -38,9 +38,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
 
-const AGENT_ROLES = ["Manager", "QA", "Writer", "Analyst"] as const
 const MODELS = ["gpt-4.1", "gpt-4.1-mini", "claude-sonnet"] as const
 
 function getChartRootId(members: OrgChartMember[], excludeId?: string) {
@@ -69,8 +69,8 @@ export function AgentDetailPane({
   const { users, agents, updateAgent } = useApp()
   const agent = agents.find((item) => item.id === agentId)
 
-  const [name, setName] = useState(agent?.name ?? "Manager")
-  const [title, setTitle] = useState(agent?.title ?? "")
+  const [name, setName] = useState(agent?.name ?? "")
+  const [description, setDescription] = useState(agent?.description ?? "")
   const [model, setModel] = useState(agent?.model ?? "gpt-4.1")
   const [status, setStatus] = useState<EntityStatus>(agent?.status ?? "active")
   const [managerId, setManagerId] = useState<string | null>(agent?.managerId ?? null)
@@ -90,7 +90,7 @@ export function AgentDetailPane({
   useEffect(() => {
     if (!agent) return
     setName(agent.name)
-    setTitle(agent.title ?? "")
+    setDescription(agent.description ?? "")
     setModel(agent.model)
     setStatus(agent.status)
     setManagerId(agent.managerId ?? null)
@@ -108,13 +108,16 @@ export function AgentDetailPane({
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    const trimmedName = name.trim()
+    if (!trimmedName) return
+
     const resolvedManagerId = allowTopLevel
       ? managerId || null
       : managerId || chartRootId
 
     updateAgent(agentId, {
-      name,
-      title: title.trim() || "Project agent",
+      name: trimmedName,
+      description: description.trim() || undefined,
       model,
       status,
       managerId: resolvedManagerId,
@@ -159,7 +162,8 @@ export function AgentDetailPane({
                 </Badge>
               </div>
               <CardDescription className="mt-1">
-                {agent.title} · {agent.model}
+                {agent.description ? `${agent.description} · ` : ""}
+                {agent.model}
               </CardDescription>
               {managerName && (
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -203,34 +207,30 @@ export function AgentDetailPane({
             <CardHeader>
               <CardTitle className="text-base">Agent settings</CardTitle>
               <CardDescription>
-                Update functional role, model, and org chart placement.
+                Update name, description, model, and org chart placement.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSave} className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label>Functional role</Label>
-                  <Select value={name} onValueChange={(value) => value && setName(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AGENT_ROLES.map((agentRole) => (
-                        <SelectItem key={agentRole} value={agentRole}>
-                          {agentRole}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-2 md:col-span-2">
+                  <Label htmlFor="agent-name">Name</Label>
+                  <Input
+                    id="agent-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Fleet routing manager"
+                    required
+                  />
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="agent-title">Title</Label>
-                  <Input
-                    id="agent-title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Fleet routing manager"
+                <div className="grid gap-2 md:col-span-2">
+                  <Label htmlFor="agent-description">Description</Label>
+                  <Textarea
+                    id="agent-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="What this agent does on the project (optional)"
+                    className="min-h-20"
                   />
                 </div>
 
@@ -267,7 +267,7 @@ export function AgentDetailPane({
                   </Select>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:col-span-2">
                   <Label>Reports to</Label>
                   <ReportsToCombobox
                     members={orgChartMembers}
@@ -279,7 +279,9 @@ export function AgentDetailPane({
                 </div>
 
                 <div className="flex items-center gap-3 pt-2 md:col-span-2">
-                  <Button type="submit">Save and close</Button>
+                  <Button type="submit" disabled={!name.trim()}>
+                    Save and close
+                  </Button>
                 </div>
               </form>
             </CardContent>

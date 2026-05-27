@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
 import {
   AgentAvatarPicker,
@@ -30,8 +31,6 @@ import {
 } from "@/components/team/agent-avatar"
 import type { AgentAvatar } from "@/data/mock"
 
-const AGENT_ROLES = ["Manager", "QA", "Writer", "Analyst"] as const
-const USER_ROLES = ["Admin", "Engineer", "PM", "Designer"] as const
 const MODELS = ["gpt-4.1", "gpt-4.1-mini", "claude-sonnet"] as const
 
 function getChartRootId(members: OrgChartMember[]) {
@@ -70,11 +69,10 @@ export function TeamMemberCreatePane({
 
   const [directoryQuery, setDirectoryQuery] = useState("")
   const [selectedDirectoryId, setSelectedDirectoryId] = useState<string>("")
-  const [role, setRole] = useState<string>("Engineer")
-  const [name, setName] = useState("Manager")
-  const [title, setTitle] = useState("Project agent")
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
   const [model, setModel] = useState("gpt-4.1")
-  const [avatar, setAvatar] = useState<AgentAvatar>(() => defaultAgentAvatar("Manager"))
+  const [avatar, setAvatar] = useState<AgentAvatar>(() => defaultAgentAvatar(""))
   const [reportsTo, setReportsTo] = useState<string | null>(managerId ?? chartRootId ?? null)
 
   const filteredCandidates = directoryCandidates.filter((candidate) => {
@@ -90,6 +88,13 @@ export function TeamMemberCreatePane({
     setReportsTo(managerId ?? chartRootId ?? null)
   }, [managerId, chartRootId])
 
+  function handleNameChange(value: string) {
+    setName(value)
+    setAvatar((current) =>
+      current.type === "initials" ? defaultAgentAvatar(value) : current,
+    )
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -98,9 +103,12 @@ export function TeamMemberCreatePane({
       : reportsTo || chartRootId
 
     if (isAgent) {
+      const trimmedName = name.trim()
+      if (!trimmedName) return
+
       const id = addAgent({
-        name,
-        title: title.trim() || "Project agent",
+        name: trimmedName,
+        description: description.trim() || undefined,
         model,
         status: "active",
         managerId: resolvedManagerId,
@@ -119,7 +127,6 @@ export function TeamMemberCreatePane({
     const id = addUser({
       name: candidate.displayName,
       email: candidate.email,
-      role,
       title: candidate.jobTitle,
       managerId: resolvedManagerId,
       projectId,
@@ -134,39 +141,28 @@ export function TeamMemberCreatePane({
             <>
               <AgentAvatarPicker value={avatar} name={name} onChange={setAvatar} />
 
-              <div className="grid gap-2">
-                <Label>Functional role</Label>
-                <Select
-                  value={name}
-                  onValueChange={(value) => {
-                    if (!value) return
-                    setName(value)
-                    setAvatar((current) =>
-                      current.type === "initials" ? defaultAgentAvatar(value) : current,
-                    )
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AGENT_ROLES.map((agentRole) => (
-                      <SelectItem key={agentRole} value={agentRole}>
-                        {agentRole}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="create-agent-title">Title</Label>
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="create-agent-name">Name</Label>
                 <Input
-                  id="create-agent-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  id="create-agent-name"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Fleet routing manager"
+                  required
                 />
               </div>
+
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="create-agent-description">Description</Label>
+                <Textarea
+                  id="create-agent-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What this agent does on the project (optional)"
+                  className="min-h-20"
+                />
+              </div>
+
               <div className="grid gap-2">
                 <Label>Model</Label>
                 <Select value={model} onValueChange={(value) => value && setModel(value)}>
@@ -231,22 +227,6 @@ export function TeamMemberCreatePane({
                   )}
                 </div>
               </div>
-
-              <div className="grid gap-2">
-                <Label>Project role</Label>
-                <Select value={role} onValueChange={(value) => value && setRole(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {USER_ROLES.map((userRole) => (
-                      <SelectItem key={userRole} value={userRole}>
-                        {userRole}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </>
           )}
 
@@ -264,7 +244,10 @@ export function TeamMemberCreatePane({
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!isAgent && !selectedDirectoryId}>
+            <Button
+              type="submit"
+              disabled={isAgent ? !name.trim() : !selectedDirectoryId}
+            >
               {isAgent ? "Add agent" : "Add to project"}
             </Button>
           </div>
@@ -279,7 +262,7 @@ export function TeamMemberCreatePane({
         <CardTitle>{isAgent ? "Add agent" : "Add person from directory"}</CardTitle>
         <CardDescription>
           {isAgent
-            ? "Configure a new AI agent on this project's org chart."
+            ? "Give the agent a name and optional description for this project."
             : "Search your corporate directory and assign them to this project."}
         </CardDescription>
       </CardHeader>

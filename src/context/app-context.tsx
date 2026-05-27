@@ -52,14 +52,14 @@ interface AppContextValue {
   addUser: (input: {
     name: string
     email: string
-    role: string
+    role?: string
     title?: string
     managerId?: string | null
     projectId?: string
   }) => string
   addAgent: (input: {
     name: string
-    title?: string
+    description?: string
     model: string
     status?: EntityStatus
     managerId?: string | null
@@ -82,7 +82,7 @@ interface AppContextValue {
     id: string,
     input: {
       name?: string
-      title?: string
+      description?: string
       model?: string
       status?: EntityStatus
       managerId?: string | null
@@ -214,8 +214,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           orgId: currentOrgId,
           name: input.name,
           email: input.email,
-          role: input.role,
-          title: input.title ?? input.role,
+          role: input.role ?? "Member",
+          title: input.title,
           managerId: input.managerId ?? null,
           projectIds: input.projectId ? [input.projectId] : [],
         },
@@ -230,7 +230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           id,
           orgId: currentOrgId,
           name: input.name,
-          title: input.title ?? "Project agent",
+          description: input.description?.trim() || undefined,
           model: input.model,
           status: input.status ?? "active",
           managerId: input.managerId ?? null,
@@ -275,7 +275,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return {
             ...agent,
             name: input.name ?? agent.name,
-            title: input.title ?? agent.title,
+            description:
+              input.description !== undefined
+                ? input.description.trim() || undefined
+                : agent.description,
             model: input.model ?? agent.model,
             status: input.status ?? agent.status,
             managerId: input.managerId !== undefined ? input.managerId : agent.managerId,

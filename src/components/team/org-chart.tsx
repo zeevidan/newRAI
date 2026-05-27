@@ -98,7 +98,9 @@ function renderNodeContent(node: {
       ? BRAND
       : "rgba(0,73,255,0.1)"
   const avatarColor = isAgent || isRoot ? "#ffffff" : BRAND
-  const subtitle = isAgent ? data.model ?? "—" : data.title
+  const subtitle = isAgent
+    ? data.model || "—"
+    : data.title
   const avatarInner = isAgent
     ? getOrgChartAvatarMarkup(data.avatar, data.name)
     : data.initials

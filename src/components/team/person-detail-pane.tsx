@@ -17,17 +17,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
-
-const USER_ROLES = ["Admin", "Engineer", "PM", "Designer"] as const
 
 function getInitials(name: string) {
   return name
@@ -70,7 +61,6 @@ export function PersonDetailPane({
   const user = users.find((item) => item.id === userId)
   const directory = getDirectoryProfile(userId)
 
-  const [role, setRole] = useState(user?.role ?? "Engineer")
   const [managerId, setManagerId] = useState<string | null>(user?.managerId ?? null)
 
   const chartRootId = useMemo(
@@ -82,7 +72,6 @@ export function PersonDetailPane({
 
   useEffect(() => {
     if (!user) return
-    setRole(user.role)
     setManagerId(user.managerId ?? null)
   }, [user])
 
@@ -103,7 +92,6 @@ export function PersonDetailPane({
       : managerId || chartRootId
 
     updateUser(userId, {
-      role,
       managerId: resolvedManagerId,
       projectId,
       onProject: true,
@@ -133,7 +121,8 @@ export function PersonDetailPane({
               </Badge>
             </div>
             <CardDescription className="mt-1">
-              {user.title ?? user.role} · {user.email}
+              {user.title ? `${user.title} · ` : ""}
+              {user.email}
             </CardDescription>
             {directory && (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -205,27 +194,11 @@ export function PersonDetailPane({
               Project assignment
             </CardTitle>
             <CardDescription>
-              RAI-specific role and reporting line on this project.
+              Reporting line on this project.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid gap-2">
-                <Label>Project role</Label>
-                <Select value={role} onValueChange={(value) => value && setRole(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {USER_ROLES.map((userRole) => (
-                      <SelectItem key={userRole} value={userRole}>
-                        {userRole}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="grid gap-2">
                 <Label>Reports to (org chart)</Label>
                 <ReportsToCombobox

@@ -62,7 +62,7 @@ export function TeamMemberSheet({
   const description =
     state.open && state.mode === "create"
       ? state.kind === "agent"
-        ? "Configure a new AI agent for this project."
+        ? "Give the agent a name and optional description for this project."
         : "Add someone from your corporate directory."
       : "View and manage team member details."
 

@@ -78,7 +78,11 @@ export function CreateEntityDialog({ type, open, onOpenChange }: CreateEntityDia
         addUser({ name, email, role })
         break
       case "agent":
-        addAgent({ name, model })
+        addAgent({
+          name,
+          description: description.trim() || undefined,
+          model,
+        })
         break
       case "resource":
         addResource(name, resourceType)
@@ -164,19 +168,30 @@ export function CreateEntityDialog({ type, open, onOpenChange }: CreateEntityDia
             )}
 
             {type === "agent" && (
-              <div className="grid gap-2">
-                <Label>Model</Label>
-                <Select value={model} onValueChange={(v) => v && setModel(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-4.1">gpt-4.1</SelectItem>
-                    <SelectItem value="gpt-4.1-mini">gpt-4.1-mini</SelectItem>
-                    <SelectItem value="claude-sonnet">claude-sonnet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="agent-description">Description</Label>
+                  <Input
+                    id="agent-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="What this agent does (optional)"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Model</Label>
+                  <Select value={model} onValueChange={(v) => v && setModel(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gpt-4.1">gpt-4.1</SelectItem>
+                      <SelectItem value="gpt-4.1-mini">gpt-4.1-mini</SelectItem>
+                      <SelectItem value="claude-sonnet">claude-sonnet</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
 
             {type === "resource" && (

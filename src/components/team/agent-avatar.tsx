@@ -266,7 +266,7 @@ export function AgentAvatarPicker({
               }
             />
             <p className="text-xs text-muted-foreground">
-              Defaults to the first two letters of the functional role.
+              Defaults to the first two letters of the agent name.
             </p>
           </div>
         )}

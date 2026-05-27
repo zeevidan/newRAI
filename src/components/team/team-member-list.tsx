@@ -26,14 +26,12 @@ export interface TeamMemberRow {
   kind: OrgChartMemberKind
   name: string
   title: string
-  role: string
   email?: string
-  model?: string
   status?: EntityStatus
   avatar?: AgentAvatar
 }
 
-type SortKey = "name" | "type" | "title" | "role"
+type SortKey = "name" | "type" | "title"
 type SortDir = "asc" | "desc"
 
 function getInitials(name: string) {
@@ -51,17 +49,14 @@ export function buildTeamMemberRows(users: User[], agents: Agent[]): TeamMemberR
       id: user.id,
       kind: "user" as const,
       name: user.name,
-      title: user.title ?? user.role,
-      role: user.role,
+      title: user.title ?? "—",
       email: user.email,
     })),
     ...agents.map((agent) => ({
       id: agent.id,
       kind: "agent" as const,
       name: agent.name,
-      title: agent.title ?? "AI Agent",
-      role: agent.name,
-      model: agent.model,
+      title: agent.model,
       status: agent.status,
       avatar: agent.avatar,
     })),
@@ -127,16 +122,13 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
         return (
           row.name.toLowerCase().includes(normalizedQuery) ||
           row.title.toLowerCase().includes(normalizedQuery) ||
-          row.role.toLowerCase().includes(normalizedQuery) ||
-          (row.email?.toLowerCase().includes(normalizedQuery) ?? false) ||
-          (row.model?.toLowerCase().includes(normalizedQuery) ?? false)
+          (row.email?.toLowerCase().includes(normalizedQuery) ?? false)
         )
       })
       .sort((a, b) => {
         const pick = (row: TeamMemberRow) => {
           if (sortKey === "type") return row.kind
           if (sortKey === "title") return row.title
-          if (sortKey === "role") return row.role
           return row.name
         }
         const left = pick(a).toLowerCase()
@@ -198,7 +190,7 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
         </div>
       </div>
 
-      <div className="hidden grid-cols-[minmax(0,1.4fr)_88px_minmax(0,1fr)_minmax(0,0.9fr)_100px] gap-3 border-b border-border/60 px-4 py-2.5 md:grid">
+      <div className="hidden grid-cols-[minmax(0,220px)_88px_minmax(0,1fr)_100px] gap-3 border-b border-border/60 px-4 py-2.5 md:grid">
         <SortButton
           label="Name"
           active={sortKey === "name"}
@@ -212,16 +204,10 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
           onClick={() => toggleSort("type")}
         />
         <SortButton
-          label="Title"
+          label="Title / Model"
           active={sortKey === "title"}
           direction={sortDir}
           onClick={() => toggleSort("title")}
-        />
-        <SortButton
-          label="Role / Model"
-          active={sortKey === "role"}
-          direction={sortDir}
-          onClick={() => toggleSort("role")}
         />
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Status
@@ -239,7 +225,7 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
               key={row.id}
               type="button"
               onClick={() => onSelectMember(row.kind, row.id)}
-              className="grid w-full grid-cols-1 gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 md:grid-cols-[minmax(0,1.4fr)_88px_minmax(0,1fr)_minmax(0,0.9fr)_100px] md:items-center md:gap-3"
+              className="grid w-full grid-cols-1 gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 md:grid-cols-[minmax(0,220px)_88px_minmax(0,1fr)_100px] md:items-center md:gap-3"
             >
               <div className="flex min-w-0 items-center gap-3">
                 {row.kind === "agent" ? (
@@ -284,9 +270,6 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
                   )}
                 </Badge>
                 <p className="truncate text-sm text-muted-foreground">{row.title}</p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {row.kind === "agent" ? row.model : row.role}
-                </p>
                 <div>
                   {row.kind === "agent" && row.status ? (
                     <Badge
