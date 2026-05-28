@@ -22,6 +22,8 @@ export interface ProjectGraphNodeData {
   dimmed?: boolean
   highlighted?: boolean
   focused?: boolean
+  connectedTarget?: boolean
+  connectedSource?: boolean
   [key: string]: unknown
 }
 
@@ -64,7 +66,16 @@ function ProjectGraphNodeComponent({ data }: NodeProps) {
         nodeData.focused && "ring-2 ring-primary shadow-md",
       )}
     >
-      <Handle type="target" position={Position.Left} className="!bg-muted-foreground/40 !w-2 !h-2" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className={cn(
+          "!w-2 !h-2 !border-2 transition-colors",
+          nodeData.connectedTarget
+            ? "!bg-sky-500 !border-sky-600"
+            : "!bg-muted-foreground/40 !border-background",
+        )}
+      />
       <div className="flex items-start gap-2">
         <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
         <div className="min-w-0">
@@ -74,7 +85,16 @@ function ProjectGraphNodeComponent({ data }: NodeProps) {
           )}
         </div>
       </div>
-      <Handle type="source" position={Position.Right} className="!bg-muted-foreground/40 !w-2 !h-2" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className={cn(
+          "!w-2 !h-2 !border-2 transition-colors",
+          nodeData.connectedSource
+            ? "!bg-violet-500 !border-violet-600"
+            : "!bg-muted-foreground/40 !border-background",
+        )}
+      />
     </div>
   )
 }

@@ -62,6 +62,7 @@ function getRelationshipHighlight(
 
 function toFlowNodes(
   nodes: GraphNode[],
+  edges: GraphEdge[],
   positions: Map<string, { x: number; y: number }>,
   highlight: { nodeIds: Set<string>; edgeIds: Set<string> },
   focusedNodeId: string | null,
@@ -80,6 +81,8 @@ function toFlowNodes(
       dimmed: isFocusActive && !highlight.nodeIds.has(node.id),
       highlighted: isFocusActive && highlight.nodeIds.has(node.id) && node.id !== focusedNodeId,
       focused: node.id === focusedNodeId,
+      connectedTarget: edges.some((edge) => edge.target === node.id),
+      connectedSource: edges.some((edge) => edge.source === node.id),
     } satisfies ProjectGraphNodeData,
   }))
 }
@@ -191,8 +194,8 @@ export function ProjectRelationshipDiagram({
   )
 
   const flowNodes = useMemo(
-    () => toFlowNodes(displayGraph.nodes, positions, highlight, focusedNodeId),
-    [displayGraph.nodes, positions, highlight, focusedNodeId],
+    () => toFlowNodes(displayGraph.nodes, displayGraph.edges, positions, highlight, focusedNodeId),
+    [displayGraph.nodes, displayGraph.edges, positions, highlight, focusedNodeId],
   )
   const flowEdges = useMemo(
     () => toFlowEdges(displayGraph.edges, highlight, focusedNodeId),
