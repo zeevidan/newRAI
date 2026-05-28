@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react"
 import {
   Activity,
+  Brain,
+  Database,
   FileCode2,
   ScrollText,
   Settings2,
+  Shield,
+  Sparkles,
+  Wallet,
+  Wrench,
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
 import {
@@ -19,6 +25,12 @@ import {
   AgentAvatarButton,
   AgentAvatarEditorDialog,
 } from "@/components/team/agent-avatar-editor-dialog"
+import { AgentAccessDataTab } from "@/components/team/agent-detail/agent-access-data-tab"
+import { AgentBehaviorTab } from "@/components/team/agent-detail/agent-behavior-tab"
+import { AgentBudgetTab } from "@/components/team/agent-detail/agent-budget-tab"
+import { AgentContextTab } from "@/components/team/agent-detail/agent-context-tab"
+import { AgentGuardrailsTab } from "@/components/team/agent-detail/agent-guardrails-tab"
+import { AgentSkillsToolsTab } from "@/components/team/agent-detail/agent-skills-tools-tab"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -184,9 +196,34 @@ export function AgentDetailPane({
       />
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList variant="line" className="h-10 w-full justify-start bg-transparent">
-          <TabsTrigger value="overview">
-            Overview
+        <TabsList
+          variant="line"
+          className="h-auto w-full justify-start gap-0 overflow-x-auto bg-transparent pb-px"
+        >
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="behavior">
+            <Sparkles className="size-4" />
+            Behavior
+          </TabsTrigger>
+          <TabsTrigger value="skills-tools">
+            <Wrench className="size-4" />
+            Skills & Tools
+          </TabsTrigger>
+          <TabsTrigger value="access-data">
+            <Database className="size-4" />
+            Access & Data
+          </TabsTrigger>
+          <TabsTrigger value="guardrails">
+            <Shield className="size-4" />
+            Guardrails
+          </TabsTrigger>
+          <TabsTrigger value="budget">
+            <Wallet className="size-4" />
+            Budget
+          </TabsTrigger>
+          <TabsTrigger value="context">
+            <Brain className="size-4" />
+            Context
           </TabsTrigger>
           <TabsTrigger value="configurations">
             <Settings2 className="size-4" />
@@ -203,15 +240,15 @@ export function AgentDetailPane({
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Agent settings</CardTitle>
-              <CardDescription>
-                Update name, description, model, and org chart placement.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSave} className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={handleSave} className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Agent settings</CardTitle>
+                <CardDescription>
+                  Identity, model, and org chart placement for this project.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2 md:col-span-2">
                   <Label htmlFor="agent-name">Name</Label>
                   <Input
@@ -277,15 +314,39 @@ export function AgentDetailPane({
                     allowTopLevel={allowTopLevel}
                   />
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="flex items-center gap-3 pt-2 md:col-span-2">
-                  <Button type="submit" disabled={!name.trim()}>
-                    Save and close
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={!name.trim()}>
+                Save & Close
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="behavior" className="mt-0">
+          <AgentBehaviorTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="skills-tools" className="mt-0">
+          <AgentSkillsToolsTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="access-data" className="mt-0">
+          <AgentAccessDataTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="guardrails" className="mt-0">
+          <AgentGuardrailsTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="budget" className="mt-0">
+          <AgentBudgetTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="context" className="mt-0">
+          <AgentContextTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
         </TabsContent>
 
         <TabsContent value="configurations" className="mt-0">
@@ -296,7 +357,7 @@ export function AgentDetailPane({
                 Agent configurations
               </CardTitle>
               <CardDescription>
-                Environment-specific settings bound to this agent.
+                Environment-specific settings bound to this agent (read-only).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">

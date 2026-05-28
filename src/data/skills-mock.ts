@@ -332,6 +332,35 @@ export const platformSkills: SkillRecord[] = [
       warnings: ["External URL fetching detected — audit before enabling in production."],
     },
   },
+  {
+    id: "skill-platform-safety-preamble",
+    scope: "platform",
+    metadata: {
+      name: "platform-safety-preamble",
+      description:
+        "Platform-wide safety instructions prepended to all agents. Use for every agent run to enforce baseline safety.",
+    },
+    rawContent: `---
+name: platform-safety-preamble
+description: Platform-wide safety instructions prepended to all agents.
+---
+
+# Platform Safety
+
+Do not expose secrets, credentials, or PII. Refuse harmful requests.
+`,
+    category: "Compliance",
+    tags: ["platform", "safety"],
+    source: "RAI platform library",
+    updatedAt: "2026-05-01T08:00:00Z",
+    validation: {
+      status: "validated",
+      validatedAt: "2026-05-01T08:00:00Z",
+      validatedBy: "Platform trust & safety",
+      checks: validatedChecks(),
+      warnings: [],
+    },
+  },
 ]
 
 export const orgSkills: SkillRecord[] = [
@@ -382,6 +411,68 @@ export const orgSkills: SkillRecord[] = [
     },
   },
   {
+    id: "skill-org-acme-executive-tone",
+    scope: "org",
+    orgId: "org-1",
+    metadata: {
+      name: "executive-tone",
+      description:
+        "Concise, board-ready language for leadership deliverables. Use when drafting executive summaries or board materials.",
+    },
+    rawContent: `---
+name: executive-tone
+description: Concise, board-ready language for leadership deliverables.
+---
+
+# Executive Tone
+
+Write in an executive tone: lead with conclusions, avoid jargon, keep sections under 200 words.
+`,
+    category: "Documents",
+    tags: ["writing", "executive"],
+    source: "Acme Corp",
+    updatedAt: "2026-05-12T10:00:00Z",
+    createdBy: "Alex Rivera",
+    validation: {
+      status: "validated",
+      validatedAt: "2026-05-12T11:00:00Z",
+      validatedBy: "Alex Rivera",
+      checks: validatedChecks(),
+      warnings: [],
+    },
+  },
+  {
+    id: "skill-org-acme-source-citation",
+    scope: "org",
+    orgId: "org-1",
+    metadata: {
+      name: "source-citation",
+      description:
+        "Require inline citations for factual claims. Use when producing research outputs or evidence-based reports.",
+    },
+    rawContent: `---
+name: source-citation
+description: Require inline citations for factual claims.
+---
+
+# Source Citation
+
+Cite every factual claim with [source: document name]. Flag uncertainty explicitly.
+`,
+    category: "Compliance",
+    tags: ["research", "compliance"],
+    source: "Acme Corp",
+    updatedAt: "2026-05-12T10:00:00Z",
+    createdBy: "Alex Rivera",
+    validation: {
+      status: "validated",
+      validatedAt: "2026-05-12T11:00:00Z",
+      validatedBy: "Alex Rivera",
+      checks: validatedChecks(),
+      warnings: [],
+    },
+  },
+  {
     id: "skill-org-northwind-onboarding",
     scope: "org",
     orgId: "org-2",
@@ -427,6 +518,7 @@ export const orgSkillAdoptions: OrgSkillAdoption[] = [
   { orgId: "org-1", skillId: "skill-platform-pdf", enabled: true, adoptedAt: "2026-04-20T10:00:00Z" },
   { orgId: "org-1", skillId: "skill-platform-data-analysis", enabled: true, adoptedAt: "2026-05-05T10:00:00Z" },
   { orgId: "org-1", skillId: "skill-platform-customer-support", enabled: true, adoptedAt: "2026-05-08T10:00:00Z" },
+  { orgId: "org-1", skillId: "skill-platform-safety-preamble", enabled: true, adoptedAt: "2026-05-01T10:00:00Z" },
   { orgId: "org-2", skillId: "skill-platform-pdf", enabled: true, adoptedAt: "2026-04-22T10:00:00Z" },
   { orgId: "org-2", skillId: "skill-platform-data-analysis", enabled: true, adoptedAt: "2026-05-09T10:00:00Z" },
 ]

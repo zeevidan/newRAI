@@ -6,8 +6,13 @@ import {
   type ReactNode,
 } from "react"
 import {
+  agentProjectConfigs as initialAgentProjectConfigs,
+  createDefaultAgentProjectConfig,
+  type AgentProjectConfig,
+} from "@/data/agent-config-mock"
+import {
   agents as initialAgents,
-  agentAccessGrants,
+  agentAccessGrants as initialAgentAccessGrants,
   configurations as initialConfigurations,
   organizations,
   projects as initialProjects,
@@ -53,6 +58,7 @@ interface AppContextValue {
   vaults: Vault[]
   tools: Tool[]
   agentAccessGrants: AgentAccessGrant[]
+  agentProjectConfigs: AgentProjectConfig[]
   configurations: Configuration[]
   addProject: (name: string, description: string) => string
   addUser: (input: {
@@ -97,6 +103,21 @@ interface AppContextValue {
       avatar?: AgentAvatar
     },
   ) => void
+  updateAgentAccessGrant: (
+    agentId: string,
+    projectId: string,
+    input: Partial<
+      Pick<
+        AgentAccessGrant,
+        "skillIds" | "toolIds" | "vaultIds" | "integrationIds" | "workspaceFolderIds"
+      >
+    >,
+  ) => void
+  updateAgentProjectConfig: (
+    agentId: string,
+    projectId: string,
+    input: Partial<Omit<AgentProjectConfig, "id" | "agentId" | "projectId">>,
+  ) => void
   addResource: (name: string, type: Resource["type"]) => void
   addVault: (name: string) => void
   addConfiguration: (key: string, environment: string) => void
@@ -117,6 +138,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [resourceList, setResourceList] = useState(initialResources)
   const [vaultList, setVaultList] = useState(initialVaults)
   const [configList, setConfigList] = useState(initialConfigurations)
+  const [grantList, setGrantList] = useState(initialAgentAccessGrants)
+  const [agentConfigList, setAgentConfigList] = useState(initialAgentProjectConfigs)
 
   const currentOrg = organizations.find((o) => o.id === currentOrgId) ?? organizations[0]
 
@@ -196,7 +219,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     resources: orgScoped(resourceList),
     vaults: orgScoped(vaultList),
     tools: orgScoped(tools),
-    agentAccessGrants,
+    agentAccessGrants: grantList,
+    agentProjectConfigs: agentConfigList,
     configurations: orgScoped(configList),
     addProject: (name, description) => {
       const project: Project = {
@@ -295,6 +319,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }),
       )
+    },
+    updateAgentAccessGrant: (agentId, projectId, input) => {
+      setGrantList((prev) => {
+        const existing = prev.find(
+          (grant) => grant.agentId === agentId && grant.projectId === projectId,
+        )
+        if (existing) {
+          return prev.map((grant) =>
+            grant.id === existing.id ? { ...grant, ...input } : grant,
+          )
+        }
+        return [
+          ...prev,
+          {
+            id: `grant-${agentId}-${projectId}`,
+            agentId,
+            projectId,
+            skillIds: input.skillIds ?? [],
+            toolIds: input.toolIds ?? [],
+            vaultIds: input.vaultIds ?? [],
+            integrationIds: input.integrationIds ?? [],
+            workspaceFolderIds: input.workspaceFolderIds ?? [],
+          },
+        ]
+      })
+    },
+    updateAgentProjectConfig: (agentId, projectId, input) => {
+      setAgentConfigList((prev) => {
+        const existing = prev.find(
+          (cfg) => cfg.agentId === agentId && cfg.projectId === projectId,
+        )
+        if (existing) {
+          return prev.map((cfg) =>
+            cfg.id === existing.id ? { ...cfg, ...input } : cfg,
+          )
+        }
+        return [
+          ...prev,
+          { ...createDefaultAgentProjectConfig(agentId, projectId), ...input },
+        ]
+      })
     },
     addResource: (name, type) => {
       setResourceList((prev) => [
