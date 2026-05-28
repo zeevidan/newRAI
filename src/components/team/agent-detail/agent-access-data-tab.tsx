@@ -13,6 +13,7 @@ import {
   getProjectVaults,
 } from "@/data/mock"
 import { MultiSelectPanel } from "@/components/team/agent-detail/multi-select-panel"
+import { WorkspaceFolderTree } from "@/components/team/agent-detail/workspace-folder-tree"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -55,10 +56,7 @@ export function AgentAccessDataTab({ agentId, projectId, onSaved }: AgentAccessD
     [agentId, projectId, agentProjectConfigs],
   )
 
-  const projectFolders = useMemo(
-    () => getProjectFiles(projectId).filter((node) => node.kind === "folder"),
-    [projectId],
-  )
+  const projectFiles = useMemo(() => getProjectFiles(projectId), [projectId])
   const projectVaults = useMemo(() => getProjectVaults(projectId, vaults), [projectId, vaults])
   const projectIntegrations = useMemo(
     () => getProjectIntegrations(projectId, resources),
@@ -125,13 +123,8 @@ export function AgentAccessDataTab({ agentId, projectId, onSaved }: AgentAccessD
           </div>
 
           {workspaceScope === "folders" && (
-            <MultiSelectPanel
-              items={projectFolders.map((folder) => ({
-                id: folder.id,
-                label: folder.name,
-                description: "Project folder",
-                badge: "folder",
-              }))}
+            <WorkspaceFolderTree
+              files={projectFiles}
               selectedIds={folderIds}
               onChange={setFolderIds}
               emptyMessage="No folders in this project workspace."
