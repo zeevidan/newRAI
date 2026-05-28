@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Background,
   Controls,
@@ -11,7 +11,6 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { filterProjectGraph } from "@/lib/project-graph/build-project-graph"
-import { applyForceLayout } from "@/lib/project-graph/layout-force"
 import { applyGroupedLayout } from "@/lib/project-graph/layout-grouped"
 import {
   DEFAULT_GRAPH_FILTERS,
@@ -25,7 +24,6 @@ import {
   projectGraphNodeTypes,
   type ProjectGraphNodeData,
 } from "@/components/project/project-graph-nodes"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const edgeStyles: Record<GraphEdgeKind, { stroke: string; strokeDasharray?: string }> = {
@@ -39,8 +37,6 @@ export interface ProjectRelationshipDiagramProps {
   onSelectNode?: (node: GraphNode) => void
   className?: string
 }
-
-type LayoutMode = "grouped" | "force"
 
 function getRelationshipHighlight(
   focusedNodeId: string | null,
@@ -129,6 +125,8 @@ const filterLabels: Record<GraphNodeFilter, string> = {
   workspace: "Workspace",
 }
 
+const ALL_GRAPH_FILTERS = Object.keys(filterLabels) as GraphNodeFilter[]
+
 const flowInteractionProps = {
   nodesDraggable: false,
   nodesConnectable: false,
@@ -146,49 +144,59 @@ export function ProjectRelationshipDiagram({
   onSelectNode,
   className,
 }: ProjectRelationshipDiagramProps) {
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("grouped")
   const [filters, setFilters] = useState<GraphNodeFilter[]>(DEFAULT_GRAPH_FILTERS)
-  const [showReportingLines, setShowReportingLines] = useState(false)
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined)
+  const masterFilterRef = useRef<HTMLInputElement>(null)
+
+  const allFiltersSelected = filters.length === ALL_GRAPH_FILTERS.length
+  const someFiltersSelected = filters.length > 0 && !allFiltersSelected
+
+  useEffect(() => {
+    if (masterFilterRef.current) {
+      masterFilterRef.current.indeterminate = someFiltersSelected
+    }
+  }, [someFiltersSelected])
+
+  function toggleAllFilters() {
+    setFilters(allFiltersSelected ? [] : ALL_GRAPH_FILTERS)
+  }
 
   const filteredGraph = useMemo(
     () => filterProjectGraph(graph, filters),
     [graph, filters],
   )
 
-  const reportingGraph = useMemo(() => {
-    if (showReportingLines) return filteredGraph
-    return {
+  const displayGraph = useMemo(
+    () => ({
       ...filteredGraph,
       edges: filteredGraph.edges.filter((edge) => edge.kind !== "reports_to"),
-    }
-  }, [filteredGraph, showReportingLines])
+    }),
+    [filteredGraph],
+  )
 
   useEffect(() => {
     setFocusedNodeId(null)
     setViewport(undefined)
-  }, [graph.projectId, filters, showReportingLines, layoutMode])
+  }, [graph.projectId, filters])
 
   const highlight = useMemo(
-    () => getRelationshipHighlight(focusedNodeId, reportingGraph.edges),
-    [focusedNodeId, reportingGraph.edges],
+    () => getRelationshipHighlight(focusedNodeId, displayGraph.edges),
+    [focusedNodeId, displayGraph.edges],
   )
 
-  const positions = useMemo(() => {
-    if (layoutMode === "force") {
-      return applyForceLayout(reportingGraph.nodes, reportingGraph.edges)
-    }
-    return applyGroupedLayout(reportingGraph.nodes)
-  }, [layoutMode, reportingGraph])
+  const positions = useMemo(
+    () => applyGroupedLayout(displayGraph.nodes),
+    [displayGraph.nodes],
+  )
 
   const flowNodes = useMemo(
-    () => toFlowNodes(reportingGraph.nodes, positions, highlight, focusedNodeId),
-    [reportingGraph.nodes, positions, highlight, focusedNodeId],
+    () => toFlowNodes(displayGraph.nodes, positions, highlight, focusedNodeId),
+    [displayGraph.nodes, positions, highlight, focusedNodeId],
   )
   const flowEdges = useMemo(
-    () => toFlowEdges(reportingGraph.edges, highlight, focusedNodeId),
-    [reportingGraph.edges, highlight, focusedNodeId],
+    () => toFlowEdges(displayGraph.edges, highlight, focusedNodeId),
+    [displayGraph.edges, highlight, focusedNodeId],
   )
 
   const layoutNodes = useMemo(
@@ -209,12 +217,12 @@ export function ProjectRelationshipDiagram({
   )
 
   const nodeLookup = useMemo(
-    () => new Map(reportingGraph.nodes.map((node) => [node.id, node])),
-    [reportingGraph.nodes],
+    () => new Map(displayGraph.nodes.map((node) => [node.id, node])),
+    [displayGraph.nodes],
   )
 
   const focusedLabel = focusedNodeId
-    ? reportingGraph.nodes.find((node) => node.id === focusedNodeId)?.label
+    ? displayGraph.nodes.find((node) => node.id === focusedNodeId)?.label
     : null
 
   const handleNodeClick = useCallback(
@@ -242,7 +250,7 @@ export function ProjectRelationshipDiagram({
     setViewport(instance.getViewport())
   }, [])
 
-  const flowKey = `${graph.projectId}:${layoutMode}:${filters.join(",")}:${showReportingLines}`
+  const flowKey = `${graph.projectId}:${filters.join(",")}`
 
   function toggleFilter(filter: GraphNodeFilter) {
     setFilters((current) =>
@@ -255,38 +263,17 @@ export function ProjectRelationshipDiagram({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-lg border border-border p-0.5">
-          <Button
-            type="button"
-            size="sm"
-            variant={layoutMode === "grouped" ? "default" : "ghost"}
-            className="h-7 px-2.5 text-xs"
-            onClick={() => setLayoutMode("grouped")}
-          >
-            Grouped
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={layoutMode === "force" ? "default" : "ghost"}
-            className="h-7 px-2.5 text-xs"
-            onClick={() => setLayoutMode("force")}
-          >
-            Force
-          </Button>
-        </div>
-
-        <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <label className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs">
           <input
+            ref={masterFilterRef}
             type="checkbox"
-            checked={showReportingLines}
-            onChange={(e) => setShowReportingLines(e.target.checked)}
-            className="size-3.5 rounded border-border"
+            checked={allFiltersSelected}
+            onChange={toggleAllFilters}
+            aria-label="Toggle all filters"
+            className="size-3 rounded border-border"
           />
-          Reporting lines
+          All
         </label>
-
-        <div className="hidden h-4 w-px bg-border sm:block" />
 
         <div className="flex flex-wrap gap-2">
           {(Object.keys(filterLabels) as GraphNodeFilter[]).map((filter) => (
@@ -362,9 +349,6 @@ export function ProjectRelationshipDiagram({
         </span>
         <span className="inline-flex items-center gap-1">
           <span className="size-2 rounded-full bg-sky-500" /> Accesses
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-muted-foreground" /> Reports to
         </span>
       </div>
     </div>
