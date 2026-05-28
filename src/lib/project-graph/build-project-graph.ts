@@ -50,6 +50,12 @@ function grantForAgent(
   )
 }
 
+function ensureNode(nodes: GraphNode[], node: GraphNode) {
+  if (!nodes.some((item) => item.id === node.id)) {
+    nodes.push(node)
+  }
+}
+
 export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
   const {
     project,
@@ -64,7 +70,7 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
     options = {},
   } = input
 
-  const { showUnusedResources = true } = options
+  const { showUnusedResources = false } = options
   const projectId = project.id
 
   const projectUsers = getProjectUsers(projectId, users)
@@ -141,64 +147,6 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
   }
 
   const workspaceId = workspaceNodeId(projectId)
-  nodes.push({
-    id: workspaceId,
-    kind: "workspace",
-    label: "Workspace",
-    subtitle: "Project file system",
-    entityId: projectId,
-    group: "resources",
-    abstract: true,
-  })
-
-  for (const vault of projectVaults) {
-    const id = graphNodeId("vault", vault.id)
-    nodes.push({
-      id,
-      kind: "vault",
-      label: vault.name,
-      subtitle: `${vault.secrets} secrets`,
-      entityId: vault.id,
-      group: "resources",
-    })
-  }
-
-  for (const integration of projectIntegrations) {
-    const id = graphNodeId("integration", integration.id)
-    nodes.push({
-      id,
-      kind: "integration",
-      label: integration.name,
-      subtitle: integration.provider ?? integration.type,
-      entityId: integration.id,
-      group: "resources",
-      metadata: { status: integration.status },
-    })
-  }
-
-  for (const skill of skills) {
-    const id = graphNodeId("skill", skill.id)
-    nodes.push({
-      id,
-      kind: "skill",
-      label: skill.metadata.name,
-      subtitle: skill.category,
-      entityId: skill.id,
-      group: "capabilities",
-    })
-  }
-
-  for (const tool of orgTools) {
-    const id = graphNodeId("tool", tool.id)
-    nodes.push({
-      id,
-      kind: "tool",
-      label: tool.name,
-      subtitle: tool.type,
-      entityId: tool.id,
-      group: "capabilities",
-    })
-  }
 
   const folderNodesAdded = new Set<string>()
 
@@ -239,6 +187,15 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
         })
       }
     } else {
+      ensureNode(nodes, {
+        id: workspaceId,
+        kind: "workspace",
+        label: "Workspace",
+        subtitle: "Project file system",
+        entityId: projectId,
+        group: "resources",
+        abstract: true,
+      })
       edges.push({
         id: edgeId("accesses", agentNodeId, workspaceId),
         kind: "accesses",
@@ -253,15 +210,23 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
         : grant.vaultIds
 
     for (const vaultId of vaultTargets) {
+      const vault = projectVaults.find((item) => item.id === vaultId)
+      if (!vault) continue
       const target = graphNodeId("vault", vaultId)
-      if (nodes.some((node) => node.id === target)) {
-        edges.push({
-          id: edgeId("accesses", agentNodeId, target),
-          kind: "accesses",
-          source: agentNodeId,
-          target,
-        })
-      }
+      ensureNode(nodes, {
+        id: target,
+        kind: "vault",
+        label: vault.name,
+        subtitle: `${vault.secrets} secrets`,
+        entityId: vault.id,
+        group: "resources",
+      })
+      edges.push({
+        id: edgeId("accesses", agentNodeId, target),
+        kind: "accesses",
+        source: agentNodeId,
+        target,
+      })
     }
 
     const integrationTargets =
@@ -270,39 +235,64 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
         : grant.integrationIds
 
     for (const integrationId of integrationTargets) {
+      const integration = projectIntegrations.find((item) => item.id === integrationId)
+      if (!integration) continue
       const target = graphNodeId("integration", integrationId)
-      if (nodes.some((node) => node.id === target)) {
-        edges.push({
-          id: edgeId("accesses", agentNodeId, target),
-          kind: "accesses",
-          source: agentNodeId,
-          target,
-        })
-      }
+      ensureNode(nodes, {
+        id: target,
+        kind: "integration",
+        label: integration.name,
+        subtitle: integration.provider ?? integration.type,
+        entityId: integration.id,
+        group: "resources",
+        metadata: { status: integration.status },
+      })
+      edges.push({
+        id: edgeId("accesses", agentNodeId, target),
+        kind: "accesses",
+        source: agentNodeId,
+        target,
+      })
     }
 
     for (const skillId of grant.skillIds ?? []) {
+      const skill = skills.find((item) => item.id === skillId)
+      if (!skill) continue
       const target = graphNodeId("skill", skillId)
-      if (nodes.some((node) => node.id === target)) {
-        edges.push({
-          id: edgeId("uses", agentNodeId, target),
-          kind: "uses",
-          source: agentNodeId,
-          target,
-        })
-      }
+      ensureNode(nodes, {
+        id: target,
+        kind: "skill",
+        label: skill.metadata.name,
+        subtitle: skill.category,
+        entityId: skill.id,
+        group: "capabilities",
+      })
+      edges.push({
+        id: edgeId("uses", agentNodeId, target),
+        kind: "uses",
+        source: agentNodeId,
+        target,
+      })
     }
 
     for (const toolId of grant.toolIds ?? []) {
+      const tool = orgTools.find((item) => item.id === toolId)
+      if (!tool) continue
       const target = graphNodeId("tool", toolId)
-      if (nodes.some((node) => node.id === target)) {
-        edges.push({
-          id: edgeId("uses", agentNodeId, target),
-          kind: "uses",
-          source: agentNodeId,
-          target,
-        })
-      }
+      ensureNode(nodes, {
+        id: target,
+        kind: "tool",
+        label: tool.name,
+        subtitle: tool.type,
+        entityId: tool.id,
+        group: "capabilities",
+      })
+      edges.push({
+        id: edgeId("uses", agentNodeId, target),
+        kind: "uses",
+        source: agentNodeId,
+        target,
+      })
     }
   }
 
