@@ -7,14 +7,17 @@ import {
 } from "react"
 import {
   agents as initialAgents,
+  agentAccessGrants,
   configurations as initialConfigurations,
   organizations,
   projects as initialProjects,
   resources as initialResources,
   mockSessionProfiles,
+  tools,
   users as initialUsers,
   vaults as initialVaults,
   type Agent,
+  type AgentAccessGrant,
   type AgentAvatar,
   type Configuration,
   type EntityStatus,
@@ -23,6 +26,7 @@ import {
   type Project,
   type Resource,
   type SessionUser,
+  type Tool,
   type User,
   type Vault,
 } from "@/data/mock"
@@ -47,6 +51,8 @@ interface AppContextValue {
   agents: Agent[]
   resources: Resource[]
   vaults: Vault[]
+  tools: Tool[]
+  agentAccessGrants: AgentAccessGrant[]
   configurations: Configuration[]
   addProject: (name: string, description: string) => string
   addUser: (input: {
@@ -189,6 +195,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     agents: orgScoped(agentList),
     resources: orgScoped(resourceList),
     vaults: orgScoped(vaultList),
+    tools: orgScoped(tools),
+    agentAccessGrants,
     configurations: orgScoped(configList),
     addProject: (name, description) => {
       const project: Project = {

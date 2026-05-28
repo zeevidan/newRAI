@@ -39,6 +39,8 @@ interface TeamTabProps {
   projectName: string
   isActive: boolean
   onBackToProject: () => void
+  focusMember?: { kind: OrgChartMemberKind; id: string } | null
+  onFocusMemberConsumed?: () => void
 }
 
 export function TeamTab({
@@ -46,6 +48,8 @@ export function TeamTab({
   projectName,
   isActive,
   onBackToProject,
+  focusMember,
+  onFocusMemberConsumed,
 }: TeamTabProps) {
   const { users, agents } = useApp()
   const chartRef = useRef<OrgChartHandle>(null)
@@ -75,6 +79,17 @@ export function TeamTab({
       setDisplayMode("chart")
     }
   }, [isActive])
+
+  useEffect(() => {
+    if (!isActive || !focusMember) return
+    setSheetState({
+      open: true,
+      mode: "detail",
+      kind: focusMember.kind,
+      id: focusMember.id,
+    })
+    onFocusMemberConsumed?.()
+  }, [isActive, focusMember, onFocusMemberConsumed])
 
   const closeSheet = () => setSheetState({ open: false })
 

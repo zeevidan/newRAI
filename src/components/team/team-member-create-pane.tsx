@@ -147,7 +147,7 @@ export function TeamMemberCreatePane({
                   id="create-agent-name"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Fleet routing manager"
+                  placeholder="Strategy research assistant"
                   required
                 />
               </div>

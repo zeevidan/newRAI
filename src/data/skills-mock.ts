@@ -153,43 +153,44 @@ description: Post updates to Slack channels from agent workflows. Use when the u
 - Post deployment status to #eng-releases
 `
 
-const ACME_SAFETY_SKILL = `---
-name: acme-safety-protocols
-description: Apply Acme Robotics safety checklists for hardware changes and field deployments. Use when the user mentions safety reviews, LIDAR calibration, or deployment sign-off.
+const ACME_STRATEGY_SKILL = `---
+name: acme-strategy-writing
+description: Draft and refine Acme Corp strategy documents using corporate tone and section templates. Use when writing strategy papers, executive summaries, or investment theme narratives.
 ---
 
-# Acme Safety Protocols
+# Acme Strategy Writing
 
 ## Instructions
 
-1. Verify lockout/tagout steps before hardware modifications.
-2. Run the pre-flight checklist for mobile robots.
-3. Document calibration results in the project vault reference.
-4. Escalate to a human supervisor for any red-flag sensor readings.
+1. Follow the Acme strategy paper outline: context, market outlook, priorities, investments, risks.
+2. Use concise executive tone — avoid jargon unless defined.
+3. Cite sources inline when using external market data.
+4. Flag assumptions that need leadership validation.
 
 ## Examples
 
-- Safety review before deploying robots to Warehouse B
-- Pre-flight checklist for LIDAR mount changes
+- Draft the 2027 market outlook section
+- Refine executive summary to two pages
 `
 
-const ROBOT_CALIBRATION_SKILL = `---
-name: robot-calibration
-description: Guide field engineers through robot sensor calibration workflows. Use when calibrating LIDAR, IMU, or wheel odometry on Acme platforms.
+const ACME_SERVICENOW_SKILL = `---
+name: acme-servicenow-triage
+description: Analyze ServiceNow helpdesk exports for trends, SLA breaches, and recurring root causes. Use when reviewing IT ticket data or helpdesk performance reports.
 ---
 
-# Robot Calibration
+# ServiceNow Helpdesk Triage
 
 ## Instructions
 
-1. Confirm robot model and firmware version.
-2. Run static calibration in a controlled environment.
-3. Capture before/after metrics for each sensor.
-4. Store calibration artifacts in the project workspace.
+1. Normalize ticket categories before aggregating trends.
+2. Report volume, mean time to resolve, and SLA breach rate by category.
+3. Highlight week-over-week changes for top five categories.
+4. Suggest likely root causes only when supported by ticket notes patterns.
 
 ## Examples
 
-- Calibrate LIDAR on AMR-200 units
+- Summarize password-reset ticket trends
+- Identify recurring VPN connectivity incidents
 `
 
 function validatedChecks(): SkillSafetyCheck[] {
@@ -335,18 +336,18 @@ export const platformSkills: SkillRecord[] = [
 
 export const orgSkills: SkillRecord[] = [
   {
-    id: "skill-org-acme-safety",
+    id: "skill-org-acme-strategy",
     scope: "org",
     orgId: "org-1",
     metadata: {
-      name: "acme-safety-protocols",
+      name: "acme-strategy-writing",
       description:
-        "Apply Acme Robotics safety checklists for hardware changes and field deployments. Use when the user mentions safety reviews, LIDAR calibration, or deployment sign-off.",
+        "Draft and refine Acme Corp strategy documents using corporate tone and section templates. Use when writing strategy papers, executive summaries, or investment theme narratives.",
     },
-    rawContent: ACME_SAFETY_SKILL,
-    category: "Compliance",
-    tags: ["safety", "hardware", "compliance"],
-    source: "Acme Robotics",
+    rawContent: ACME_STRATEGY_SKILL,
+    category: "Documents",
+    tags: ["strategy", "executive", "writing"],
+    source: "Acme Corp",
     updatedAt: "2026-05-14T08:00:00Z",
     createdBy: "Alex Rivera",
     validation: {
@@ -358,23 +359,25 @@ export const orgSkills: SkillRecord[] = [
     },
   },
   {
-    id: "skill-org-acme-calibration",
+    id: "skill-org-acme-servicenow",
     scope: "org",
     orgId: "org-1",
     metadata: {
-      name: "robot-calibration",
+      name: "acme-servicenow-triage",
       description:
-        "Guide field engineers through robot sensor calibration workflows. Use when calibrating LIDAR, IMU, or wheel odometry on Acme platforms.",
+        "Analyze ServiceNow helpdesk exports for trends, SLA breaches, and recurring root causes. Use when reviewing IT ticket data or helpdesk performance reports.",
     },
-    rawContent: ROBOT_CALIBRATION_SKILL,
-    category: "Engineering",
-    tags: ["calibration", "sensors", "field"],
-    source: "Acme Robotics",
-    updatedAt: "2026-05-18T13:00:00Z",
-    createdBy: "Morgan Lee",
+    rawContent: ACME_SERVICENOW_SKILL,
+    category: "Operations",
+    tags: ["servicenow", "helpdesk", "it-ops"],
+    source: "Acme Corp",
+    updatedAt: "2026-05-16T13:00:00Z",
+    createdBy: "Chris Alvarez",
     validation: {
-      status: "draft",
-      checks: [],
+      status: "validated",
+      validatedAt: "2026-05-16T14:00:00Z",
+      validatedBy: "Chris Alvarez",
+      checks: validatedChecks(),
       warnings: [],
     },
   },
@@ -422,8 +425,8 @@ description: Walk new researchers through Northwind lab access, equipment bookin
 
 export const orgSkillAdoptions: OrgSkillAdoption[] = [
   { orgId: "org-1", skillId: "skill-platform-pdf", enabled: true, adoptedAt: "2026-04-20T10:00:00Z" },
-  { orgId: "org-1", skillId: "skill-platform-code-review", enabled: true, adoptedAt: "2026-05-02T10:00:00Z" },
   { orgId: "org-1", skillId: "skill-platform-data-analysis", enabled: true, adoptedAt: "2026-05-05T10:00:00Z" },
+  { orgId: "org-1", skillId: "skill-platform-customer-support", enabled: true, adoptedAt: "2026-05-08T10:00:00Z" },
   { orgId: "org-2", skillId: "skill-platform-pdf", enabled: true, adoptedAt: "2026-04-22T10:00:00Z" },
   { orgId: "org-2", skillId: "skill-platform-data-analysis", enabled: true, adoptedAt: "2026-05-09T10:00:00Z" },
 ]

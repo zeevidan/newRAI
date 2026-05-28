@@ -218,7 +218,7 @@ export function AgentDetailPane({
                     id="agent-name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Fleet routing manager"
+                    placeholder="Strategy research assistant"
                     required
                   />
                 </div>

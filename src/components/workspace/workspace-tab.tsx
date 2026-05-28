@@ -34,6 +34,8 @@ type WorkspaceView = "files" | "integrations" | "vaults"
 interface WorkspaceTabProps {
   projectId: string
   isActive: boolean
+  focus?: { view: WorkspaceView; folderId?: string | null } | null
+  onFocusConsumed?: () => void
 }
 
 function formatRelativeTime(iso: string) {
@@ -283,7 +285,12 @@ function VaultsPanel({
   )
 }
 
-export function WorkspaceTab({ projectId, isActive }: WorkspaceTabProps) {
+export function WorkspaceTab({
+  projectId,
+  isActive,
+  focus,
+  onFocusConsumed,
+}: WorkspaceTabProps) {
   const { resources, vaults } = useApp()
   const [view, setView] = useState<WorkspaceView>("files")
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
@@ -308,6 +315,15 @@ export function WorkspaceTab({ projectId, isActive }: WorkspaceTabProps) {
       setCurrentFolderId(null)
     }
   }, [isActive])
+
+  useEffect(() => {
+    if (!isActive || !focus) return
+    setView(focus.view)
+    if (focus.folderId !== undefined) {
+      setCurrentFolderId(focus.folderId)
+    }
+    onFocusConsumed?.()
+  }, [isActive, focus, onFocusConsumed])
 
   const description =
     view === "files"

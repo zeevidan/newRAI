@@ -149,6 +149,19 @@
   display: none;
 }
 
+/* Project relationship diagram — edges render on a separate layer below nodes */
+.project-relationship-flow-edges,
+.project-relationship-flow-nodes,
+.project-relationship-flow-edges .react-flow,
+.project-relationship-flow-nodes .react-flow {
+  width: 100%;
+  height: 100%;
+}
+
+.project-relationship-flow-edges .react-flow__node {
+  pointer-events: none !important;
+}
+
 /* Team member detail sheet — wide panel for parameter-heavy layouts */
 [data-slot="sheet-content"][data-size="wide"][data-side="right"],
 [data-slot="sheet-content"][data-size="wide"][data-side="left"] {

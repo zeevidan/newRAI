@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useParams } from "react-router-dom"
 import {
   Activity,
@@ -23,7 +23,11 @@ import {
   projectActivity,
   projectMessages,
   projectTasks,
+  type OrgChartMemberKind,
 } from "@/data/mock"
+import { getProjectGraph } from "@/lib/project-graph/get-project-graph"
+import type { GraphNode } from "@/lib/project-graph/types"
+import { ProjectRelationshipDiagram } from "@/components/project/project-relationship-diagram"
 import { TeamTab } from "@/components/team/team-tab"
 import { WorkspaceTab } from "@/components/workspace/workspace-tab"
 import { Badge } from "@/components/ui/badge"
@@ -46,11 +50,56 @@ export function ProjectMainPane() {
     users,
     agents,
     resources,
+    vaults,
+    tools,
+    agentAccessGrants,
     configurations,
   } = useApp()
 
   const selectedProject =
     orgProjects.find((project) => project.id === projectId) ?? null
+
+  const [activeTab, setActiveTab] = useState("overview")
+  const [interactionView, setInteractionView] = useState<"messages" | "tasks">(
+    "messages",
+  )
+  const [teamFocus, setTeamFocus] = useState<{
+    kind: OrgChartMemberKind
+    id: string
+  } | null>(null)
+  const [workspaceFocus, setWorkspaceFocus] = useState<{
+    view: "files" | "integrations" | "vaults"
+    folderId?: string | null
+  } | null>(null)
+
+  const projectGraph = useMemo(
+    () =>
+      selectedProject
+        ? getProjectGraph(selectedProject.id, {
+            users,
+            agents,
+            vaults,
+            resources,
+            grants: agentAccessGrants,
+            toolList: tools,
+          })
+        : null,
+    [
+      selectedProject,
+      users,
+      agents,
+      vaults,
+      resources,
+      agentAccessGrants,
+      tools,
+    ],
+  )
+
+  useEffect(() => {
+    if (activeTab !== "interactions") {
+      setInteractionView("messages")
+    }
+  }, [activeTab])
 
   if (!selectedProject) {
     return (
@@ -74,16 +123,31 @@ export function ProjectMainPane() {
   const budgetPct = Math.round(
     (selectedProject.budgetUsed / selectedProject.budgetTotal) * 100,
   )
-  const [activeTab, setActiveTab] = useState("overview")
-  const [interactionView, setInteractionView] = useState<"messages" | "tasks">(
-    "messages",
-  )
 
-  useEffect(() => {
-    if (activeTab !== "interactions") {
-      setInteractionView("messages")
+  function handleGraphNodeSelect(node: GraphNode) {
+    if (!node.entityId && node.kind !== "workspace") return
+
+    switch (node.kind) {
+      case "workspace":
+        setWorkspaceFocus({ view: "files", folderId: null })
+        setActiveTab("workspace")
+        break
+      case "folder":
+        setWorkspaceFocus({ view: "files", folderId: node.entityId ?? null })
+        setActiveTab("workspace")
+        break
+      case "vault":
+        setWorkspaceFocus({ view: "vaults" })
+        setActiveTab("workspace")
+        break
+      case "integration":
+        setWorkspaceFocus({ view: "integrations" })
+        setActiveTab("workspace")
+        break
+      default:
+        break
     }
-  }, [activeTab])
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -160,6 +224,25 @@ export function ProjectMainPane() {
         <ScrollArea className="min-h-0 flex-1">
           <div className="p-6">
             <TabsContent value="overview" className="mt-0 space-y-4">
+              {projectGraph && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project relationships</CardTitle>
+                    <CardDescription>
+                      How people, agents, skills, tools, and resources connect on
+                      this project. Click a person or agent to highlight their
+                      relationships; click a resource to open it.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ProjectRelationshipDiagram
+                      graph={projectGraph}
+                      onSelectNode={handleGraphNodeSelect}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardHeader className="pb-2">
@@ -216,6 +299,8 @@ export function ProjectMainPane() {
                 projectName={selectedProject.name}
                 isActive={activeTab === "team"}
                 onBackToProject={() => setActiveTab("overview")}
+                focusMember={teamFocus}
+                onFocusMemberConsumed={() => setTeamFocus(null)}
               />
             </TabsContent>
 
@@ -223,6 +308,8 @@ export function ProjectMainPane() {
               <WorkspaceTab
                 projectId={selectedProject.id}
                 isActive={activeTab === "workspace"}
+                focus={workspaceFocus}
+                onFocusConsumed={() => setWorkspaceFocus(null)}
               />
             </TabsContent>
 
