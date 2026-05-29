@@ -102,8 +102,11 @@ function toFlowEdges(
   pulseEdges: GraphEdge[],
   highlight: { nodeIds: Set<string>; edgeIds: Set<string> },
   focusedNodeId: string | null,
+  isProjectRunning: boolean,
 ): Edge[] {
   const isFocusActive = focusedNodeId !== null
+  const canAnimateStaticEdge = (edge: GraphEdge) =>
+    isProjectRunning && (edge.kind === "uses" || edge.kind === "accesses")
 
   const staticEdges = edges.map((edge) => {
     const style = edgeStyles[edge.kind]
@@ -118,8 +121,8 @@ function toFlowEdges(
       pathOptions: { curvature: 0.6 },
       zIndex: 0,
       animated: isFocusActive
-        ? isHighlighted && (edge.kind === "uses" || edge.kind === "accesses")
-        : edge.kind === "uses" || edge.kind === "accesses",
+        ? isHighlighted && canAnimateStaticEdge(edge)
+        : canAnimateStaticEdge(edge),
       style: {
         stroke: style.stroke,
         strokeDasharray: style.strokeDasharray,
@@ -186,8 +189,9 @@ export function ProjectRelationshipDiagram({
   onSelectNode,
   className,
 }: ProjectRelationshipDiagramProps) {
-  const { getProjectInteractionPulses } = useWorkflow()
+  const { getProjectInteractionPulses, getProjectRuntime } = useWorkflow()
   const interactionPulses = getProjectInteractionPulses(graph.projectId)
+  const isProjectRunning = getProjectRuntime(graph.projectId)?.runState === "running"
   const [filters, setFilters] = useState<GraphNodeFilter[]>(DEFAULT_GRAPH_FILTERS)
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined)
@@ -279,8 +283,15 @@ export function ProjectRelationshipDiagram({
     ],
   )
   const flowEdges = useMemo(
-    () => toFlowEdges(displayGraph.edges, pulseEdges, highlight, focusedNodeId),
-    [displayGraph.edges, pulseEdges, highlight, focusedNodeId],
+    () =>
+      toFlowEdges(
+        displayGraph.edges,
+        pulseEdges,
+        highlight,
+        focusedNodeId,
+        isProjectRunning,
+      ),
+    [displayGraph.edges, pulseEdges, highlight, focusedNodeId, isProjectRunning],
   )
 
   const layoutNodes = useMemo(
