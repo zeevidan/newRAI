@@ -1,6 +1,7 @@
 import { FolderKanban, Search } from "lucide-react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import { formatRelativeDate } from "@/data/mock"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -8,6 +9,30 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { SidebarUserSwitcher } from "@/components/layout/sidebar-user-switcher"
 import { cn } from "@/lib/utils"
+import type { RunState } from "@/lib/workflow/types"
+
+function ProjectRunBadge({
+  runState,
+  selected,
+}: {
+  runState: RunState
+  selected: boolean
+}) {
+  const isRunning = runState === "running"
+
+  return (
+    <Badge
+      variant={isRunning ? "default" : selected ? "secondary" : "outline"}
+      className={cn(
+        "h-4 gap-1 px-1.5 text-[10px] capitalize",
+        isRunning && "bg-emerald-600 hover:bg-emerald-600",
+      )}
+    >
+      {isRunning && <span className="size-1 animate-pulse rounded-full bg-white" />}
+      {runState}
+    </Badge>
+  )
+}
 
 export function AppSidebar() {
   const {
@@ -16,6 +41,7 @@ export function AppSidebar() {
     filteredProjects,
     recentProjects,
   } = useApp()
+  const { getProjectRuntime } = useWorkflow()
   const navigate = useNavigate()
   const { projectId: activeProjectId } = useParams()
 
@@ -45,7 +71,8 @@ export function AppSidebar() {
       <ScrollArea className="min-h-0 flex-1 px-2 pb-4">
         <div className="space-y-1 px-2">
           {(projectSearch ? filteredProjects : recentProjects).map((project) => {
-            const active = project.id === activeProjectId
+            const isSelected = project.id === activeProjectId
+            const runState = getProjectRuntime(project.id)?.runState ?? "stopped"
             return (
               <button
                 key={project.id}
@@ -53,7 +80,7 @@ export function AppSidebar() {
                 onClick={() => selectProject(project.id)}
                 className={cn(
                   "flex w-full flex-col gap-1 rounded-lg px-3 py-2.5 text-left transition-colors",
-                  active
+                  isSelected
                     ? "bg-sidebar-primary text-sidebar-primary-foreground"
                     : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
@@ -65,16 +92,11 @@ export function AppSidebar() {
                 <div
                   className={cn(
                     "flex items-center justify-between pl-6 text-[11px]",
-                    active ? "text-sidebar-primary-foreground/80" : "text-muted-foreground",
+                    isSelected ? "text-sidebar-primary-foreground/80" : "text-muted-foreground",
                   )}
                 >
                   <span>{formatRelativeDate(project.updatedAt)}</span>
-                  <Badge
-                    variant={active ? "secondary" : "outline"}
-                    className="h-4 px-1.5 text-[10px] capitalize"
-                  >
-                    {project.status}
-                  </Badge>
+                  <ProjectRunBadge runState={runState} selected={isSelected} />
                 </div>
               </button>
             )
@@ -87,21 +109,32 @@ export function AppSidebar() {
                 All projects
               </p>
               {filteredProjects.slice(recentProjects.length).map((project) => {
-                const active = project.id === activeProjectId
+                const isSelected = project.id === activeProjectId
+                const runState = getProjectRuntime(project.id)?.runState ?? "stopped"
                 return (
                   <button
                     key={project.id}
                     type="button"
                     onClick={() => selectProject(project.id)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                      active
+                      "flex w-full flex-col gap-1 rounded-lg px-3 py-2 text-left transition-colors",
+                      isSelected
                         ? "bg-sidebar-primary text-sidebar-primary-foreground"
                         : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
                   >
-                    <FolderKanban className="size-4 shrink-0 opacity-70" />
-                    <span className="truncate">{project.name}</span>
+                    <div className="flex items-center gap-2">
+                      <FolderKanban className="size-4 shrink-0 opacity-70" />
+                      <span className="truncate text-sm">{project.name}</span>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center justify-end pl-6",
+                        isSelected ? "text-sidebar-primary-foreground/80" : "text-muted-foreground",
+                      )}
+                    >
+                      <ProjectRunBadge runState={runState} selected={isSelected} />
+                    </div>
                   </button>
                 )
               })}

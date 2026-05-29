@@ -105,6 +105,8 @@ function toFlowEdges(
       source: edge.source,
       target: edge.target,
       label: edge.label,
+      type: "default",
+      pathOptions: { curvature: 0.6 },
       zIndex: 0,
       animated: isFocusActive
         ? isHighlighted && (edge.kind === "uses" || edge.kind === "accesses")
