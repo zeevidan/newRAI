@@ -24,6 +24,10 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import {
+  CITATION_STYLE_ITEMS,
+  RESPONSE_FORMAT_ITEMS,
+} from "@/lib/select-items"
 
 interface AgentBehaviorTabProps {
   agentId: string
@@ -189,6 +193,7 @@ export function AgentBehaviorTab({ agentId, projectId, onSaved }: AgentBehaviorT
                 <div className="grid gap-2">
                   <Label>Format</Label>
                   <Select
+                    items={RESPONSE_FORMAT_ITEMS}
                     value={format}
                     onValueChange={(v) =>
                       v && setFormat(v as AgentProjectConfig["responseSettings"]["format"])
@@ -216,6 +221,7 @@ export function AgentBehaviorTab({ agentId, projectId, onSaved }: AgentBehaviorT
                 <div className="grid gap-2">
                   <Label>Citation style</Label>
                   <Select
+                    items={CITATION_STYLE_ITEMS}
                     value={citationStyle}
                     onValueChange={(v) =>
                       v &&

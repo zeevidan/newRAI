@@ -30,6 +30,16 @@ export interface AgentContextScope {
   memoryStoreIds: string[]
 }
 
+export type AutonomyLevel = "manual" | "suggest" | "full"
+
+export interface HeartbeatConfig {
+  enabled: boolean
+  intervalSec: number
+  autonomy: AutonomyLevel
+  maxActionsPerBeat: number
+  activeWindow?: string
+}
+
 export interface AgentProjectConfig {
   id: string
   agentId: string
@@ -46,6 +56,7 @@ export interface AgentProjectConfig {
   egressAllowlistId?: string
   budget: AgentBudgetLimits
   contextScope: AgentContextScope
+  heartbeat: HeartbeatConfig
 }
 
 export interface Guardrail {
@@ -221,6 +232,13 @@ const defaultResponseSettings: ResponseSettings = {
   citationStyle: "inline",
 }
 
+const defaultHeartbeat: HeartbeatConfig = {
+  enabled: true,
+  intervalSec: 30,
+  autonomy: "full",
+  maxActionsPerBeat: 1,
+}
+
 export const agentProjectConfigs: AgentProjectConfig[] = [
   {
     id: "cfg-a1-proj1",
@@ -252,6 +270,13 @@ export const agentProjectConfigs: AgentProjectConfig[] = [
       platformContextIds: ["ic1"],
       memoryStoreIds: ["ms1"],
     },
+    heartbeat: {
+      enabled: true,
+      intervalSec: 25,
+      autonomy: "full",
+      maxActionsPerBeat: 2,
+      activeWindow: "Mon–Fri 07:00–20:00 UTC",
+    },
   },
   {
     id: "cfg-a4-proj1",
@@ -279,6 +304,12 @@ export const agentProjectConfigs: AgentProjectConfig[] = [
       platformContextIds: ["ic1"],
       memoryStoreIds: ["ms2"],
     },
+    heartbeat: {
+      enabled: true,
+      intervalSec: 35,
+      autonomy: "suggest",
+      maxActionsPerBeat: 1,
+    },
   },
   {
     id: "cfg-a2-proj2",
@@ -301,6 +332,12 @@ export const agentProjectConfigs: AgentProjectConfig[] = [
       projectContextIds: ["ic4"],
       platformContextIds: ["ic1"],
       memoryStoreIds: [],
+    },
+    heartbeat: {
+      enabled: true,
+      intervalSec: 30,
+      autonomy: "full",
+      maxActionsPerBeat: 1,
     },
   },
 ]
@@ -330,6 +367,7 @@ export function createDefaultAgentProjectConfig(
       platformContextIds: ["ic1"],
       memoryStoreIds: [],
     },
+    heartbeat: { ...defaultHeartbeat },
   }
 }
 

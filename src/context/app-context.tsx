@@ -118,6 +118,14 @@ interface AppContextValue {
     projectId: string,
     input: Partial<Omit<AgentProjectConfig, "id" | "agentId" | "projectId">>,
   ) => void
+  updateProject: (
+    id: string,
+    input: {
+      name?: string
+      description?: string
+      status?: EntityStatus
+    },
+  ) => void
   addResource: (name: string, type: Resource["type"]) => void
   addVault: (name: string) => void
   addConfiguration: (key: string, environment: string) => void
@@ -360,6 +368,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           { ...createDefaultAgentProjectConfig(agentId, projectId), ...input },
         ]
       })
+    },
+    updateProject: (id, input) => {
+      setProjectList((prev) =>
+        prev.map((project) =>
+          project.id === id
+            ? {
+                ...project,
+                name: input.name ?? project.name,
+                description: input.description ?? project.description,
+                status: input.status ?? project.status,
+                updatedAt: new Date().toISOString(),
+              }
+            : project,
+        ),
+      )
     },
     addResource: (name, type) => {
       setResourceList((prev) => [

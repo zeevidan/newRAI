@@ -9,7 +9,7 @@ export type GraphNodeKind =
   | "tool"
   | "config"
 
-export type GraphEdgeKind = "reports_to" | "uses" | "accesses"
+export type GraphEdgeKind = "reports_to" | "uses" | "accesses" | "assigned_to" | "messaged"
 
 export type GraphNodeGroup = "team" | "capabilities" | "resources"
 

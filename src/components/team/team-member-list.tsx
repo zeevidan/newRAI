@@ -8,6 +8,8 @@ import {
   UserRound,
 } from "lucide-react"
 import type { Agent, AgentAvatar, EntityStatus, OrgChartMemberKind, User } from "@/data/mock"
+import { useWorkflow } from "@/context/workflow-context"
+import type { RunState } from "@/lib/workflow/types"
 import { AgentAvatarDisplay } from "@/components/team/agent-avatar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import {
+  TEAM_KIND_FILTER_ITEMS,
+  TEAM_STATUS_FILTER_ITEMS,
+} from "@/lib/select-items"
 
 export interface TeamMemberRow {
   id: string
@@ -96,10 +102,18 @@ function SortButton({
 interface TeamMemberListProps {
   users: User[]
   agents: Agent[]
+  projectId: string
   onSelectMember: (kind: OrgChartMemberKind, id: string) => void
 }
 
-export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberListProps) {
+function runStateLabel(runState: RunState) {
+  if (runState === "running") return "Running"
+  if (runState === "paused") return "Paused"
+  return null
+}
+
+export function TeamMemberList({ users, agents, projectId, onSelectMember }: TeamMemberListProps) {
+  const { agentRuntimes } = useWorkflow()
   const [query, setQuery] = useState("")
   const [kindFilter, setKindFilter] = useState<"all" | OrgChartMemberKind>("all")
   const [statusFilter, setStatusFilter] = useState<"all" | EntityStatus>("all")
@@ -161,6 +175,7 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
         </div>
         <div className="flex flex-wrap gap-2">
           <Select
+            items={TEAM_KIND_FILTER_ITEMS}
             value={kindFilter}
             onValueChange={(value) => value && setKindFilter(value as typeof kindFilter)}
           >
@@ -174,6 +189,7 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
             </SelectContent>
           </Select>
           <Select
+            items={TEAM_STATUS_FILTER_ITEMS}
             value={statusFilter}
             onValueChange={(value) => value && setStatusFilter(value as typeof statusFilter)}
           >
@@ -272,12 +288,29 @@ export function TeamMemberList({ users, agents, onSelectMember }: TeamMemberList
                 <p className="truncate text-sm text-muted-foreground">{row.title}</p>
                 <div>
                   {row.kind === "agent" && row.status ? (
-                    <Badge
-                      variant={row.status === "active" ? "default" : "outline"}
-                      className="capitalize"
-                    >
-                      {row.status}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge
+                        variant={row.status === "active" ? "default" : "outline"}
+                        className="capitalize"
+                      >
+                        {row.status}
+                      </Badge>
+                      {(() => {
+                        const runtime = agentRuntimes.find(
+                          (rt) =>
+                            rt.agentId === row.id &&
+                            rt.projectId === projectId &&
+                            rt.runState === "running",
+                        )
+                        if (!runtime) return null
+                        return (
+                          <Badge variant="default" className="gap-1 bg-emerald-600 capitalize">
+                            <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                            {runStateLabel(runtime.runState)}
+                          </Badge>
+                        )
+                      })()}
+                    </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">—</span>
                   )}

@@ -30,6 +30,8 @@ const edgeStyles: Record<GraphEdgeKind, { stroke: string; strokeDasharray?: stri
   reports_to: { stroke: "hsl(var(--muted-foreground))", strokeDasharray: "4 4" },
   uses: { stroke: "#8b5cf6" },
   accesses: { stroke: "#0ea5e9" },
+  assigned_to: { stroke: "#f59e0b", strokeDasharray: "6 3" },
+  messaged: { stroke: "#ec4899", strokeDasharray: "2 4" },
 }
 
 export interface ProjectRelationshipDiagramProps {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Bot,
   GitBranch,
@@ -9,6 +9,7 @@ import {
   UserPlus,
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import {
   buildProjectOrgChart,
   getProjectAgents,
@@ -31,6 +32,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import type { RunState } from "@/lib/workflow/types"
 
 type TeamDisplayMode = "chart" | "list"
 
@@ -52,6 +54,7 @@ export function TeamTab({
   onFocusMemberConsumed,
 }: TeamTabProps) {
   const { users, agents } = useApp()
+  const { agentRuntimes } = useWorkflow()
   const chartRef = useRef<OrgChartHandle>(null)
   const [displayMode, setDisplayMode] = useState<TeamDisplayMode>("chart")
   const [sheetState, setSheetState] = useState<TeamSheetState>({ open: false })
@@ -69,6 +72,14 @@ export function TeamTab({
     [projectId, users, agents],
   )
 
+  const agentRunStates = useMemo(() => {
+    const map: Record<string, { runState: RunState; currentAction?: string }> = {}
+    for (const rt of agentRuntimes) {
+      if (rt.projectId !== projectId) continue
+      map[rt.agentId] = { runState: rt.runState, currentAction: rt.currentAction }
+    }
+    return map
+  }, [agentRuntimes, projectId])
   const memberCount = projectUsers.length + projectAgents.length
   const chartRootId =
     orgChartMembers.find((member) => !member.managerId)?.id ?? null
@@ -91,20 +102,23 @@ export function TeamTab({
     onFocusMemberConsumed?.()
   }, [isActive, focusMember, onFocusMemberConsumed])
 
-  const closeSheet = () => setSheetState({ open: false })
+  const closeSheet = useCallback(() => setSheetState({ open: false }), [])
 
-  const openDetail = (kind: OrgChartMemberKind, id: string) => {
+  const openDetail = useCallback((kind: OrgChartMemberKind, id: string) => {
     setSheetState({ open: true, mode: "detail", kind, id })
-  }
+  }, [])
 
-  const openCreate = (kind: OrgChartMemberKind, managerId?: string | null) => {
-    setSheetState({
-      open: true,
-      mode: "create",
-      kind,
-      managerId: managerId ?? chartRootId,
-    })
-  }
+  const openCreate = useCallback(
+    (kind: OrgChartMemberKind, managerId?: string | null) => {
+      setSheetState({
+        open: true,
+        mode: "create",
+        kind,
+        managerId: managerId ?? chartRootId,
+      })
+    },
+    [chartRootId],
+  )
 
   const breadcrumbSegments = [{ label: "Team" }]
 
@@ -210,6 +224,7 @@ export function TeamTab({
               variant="content"
               members={orgChartMembers}
               projectId={projectId}
+              agentRunStates={agentRunStates}
               onSelectMember={openDetail}
               onCreateMember={openCreate}
             />
@@ -217,6 +232,7 @@ export function TeamTab({
             <TeamMemberList
               users={projectUsers}
               agents={projectAgents}
+              projectId={projectId}
               onSelectMember={openDetail}
             />
           )}

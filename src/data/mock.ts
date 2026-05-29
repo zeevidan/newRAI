@@ -109,26 +109,43 @@ export interface Configuration {
   environment: string
 }
 
+export type MemberKind = "user" | "agent"
+
 export interface Task {
   id: string
+  projectId: string
   title: string
-  assignee: string
-  status: "todo" | "in_progress" | "done"
-  due: string
+  description?: string
+  assigneeId?: string
+  assigneeKind?: MemberKind
+  creatorId: string
+  creatorKind: MemberKind
+  status: "todo" | "in_progress" | "blocked" | "done"
+  createdAt: string
+  updatedAt: string
+  dueAt?: string
 }
 
 export interface Message {
   id: string
-  author: string
+  projectId: string
+  authorId: string
+  authorKind: MemberKind
+  recipientId?: string
+  recipientKind?: MemberKind
+  threadId?: string
   content: string
-  time: string
+  createdAt: string
 }
 
 export interface ActivityItem {
   id: string
+  projectId?: string
+  agentId?: string
+  actorId: string
+  actorKind: MemberKind
   action: string
-  actor: string
-  time: string
+  createdAt: string
 }
 
 export interface DirectoryProfile {
@@ -157,6 +174,7 @@ export interface DirectoryCandidate {
 
 export interface AgentLogEntry {
   id: string
+  agentId?: string
   level: "info" | "warn" | "error" | "debug"
   message: string
   timestamp: string
@@ -967,87 +985,11 @@ export function getOrgPolicies(orgId: string) {
   return policies.filter((policy) => policy.orgId === orgId)
 }
 
-export const projectTasks: Record<string, Task[]> = {
-  "proj-1": [
-    { id: "t1", title: "Finalize market sizing section", assignee: "Morgan Lee", status: "in_progress", due: "May 24" },
-    { id: "t2", title: "Review executive summary draft", assignee: "Alex Rivera", status: "todo", due: "May 26" },
-    { id: "t3", title: "Pull Q2 competitive intel", assignee: "Strategy research assistant", status: "done", due: "May 18" },
-    { id: "t4", title: "Align investment themes with finance", assignee: "Sam Okonkwo", status: "in_progress", due: "May 28" },
-  ],
-  "proj-2": [
-    { id: "t5", title: "Validate onboarding friction theme", assignee: "Priya Sharma", status: "in_progress", due: "May 23" },
-    { id: "t6", title: "Draft SSO improvement brief", assignee: "Feature brief author", status: "todo", due: "May 25" },
-    { id: "t7", title: "Import latest NPS export", assignee: "Jordan Kim", status: "done", due: "May 17" },
-  ],
-  "proj-3": [
-    { id: "t8", title: "Refresh 90-day ticket export", assignee: "Chris Alvarez", status: "done", due: "May 19" },
-    { id: "t9", title: "Summarize top 5 recurring incidents", assignee: "Root cause summarizer", status: "in_progress", due: "May 22" },
-    { id: "t10", title: "Review SLA breach report with IT leadership", assignee: "Dana Patel", status: "todo", due: "May 27" },
-  ],
-  "proj-4": [
-    { id: "t11", title: "Publish week 20 sales deck", assignee: "Sales report compiler", status: "in_progress", due: "May 19" },
-    { id: "t12", title: "Add pipeline commentary for EMEA", assignee: "Trend narrator", status: "todo", due: "May 20" },
-    { id: "t13", title: "Reconcile ERP vs Salesforce totals", assignee: "Dana Patel", status: "in_progress", due: "May 21" },
-  ],
-  "proj-5": [
-    { id: "t14", title: "Ship telemetry batch ingest", assignee: "Taylor Brooks", status: "in_progress", due: "May 25" },
-  ],
-  "proj-6": [
-    { id: "t15", title: "Scope pilot inspection workflow", assignee: "Elena Vasquez", status: "in_progress", due: "May 30" },
-  ],
-}
-
-export const projectMessages: Record<string, Message[]> = {
-  "proj-1": [
-    { id: "m1", author: "Morgan Lee", content: "Competitive landscape draft is in research/ — needs your eyes on TAM assumptions.", time: "2h ago" },
-    { id: "m2", author: "Strategy research assistant", content: "Synced 12 new analyst reports from SharePoint.", time: "5h ago" },
-    { id: "m3", author: "Alex Rivera", content: "Let's keep the AI investment theme to two pages max in the final paper.", time: "Yesterday" },
-  ],
-  "proj-2": [
-    { id: "m4", author: "Priya Sharma", content: "Onboarding friction is the clear leader — 34% of detractor comments mention SSO.", time: "3h ago" },
-    { id: "m5", author: "Jordan Kim", content: "Can we prioritize the SSO brief for the June roadmap review?", time: "Yesterday" },
-  ],
-  "proj-3": [
-    { id: "m6", author: "Chris Alvarez", content: "Password reset tickets still dominate — same as last month.", time: "4h ago" },
-    { id: "m7", author: "Ticket trend analyst", content: "SLA breach rate down to 4.1% from 5.8% week over week.", time: "Yesterday" },
-  ],
-  "proj-4": [
-    { id: "m8", author: "Riley Foster", content: "Leadership wants shorter trend narrative this week — one slide max.", time: "2h ago" },
-    { id: "m9", author: "Trend narrator", content: "EMEA pipeline softening noted; APAC holding flat.", time: "Today, 8:00 AM" },
-  ],
-  "proj-5": [
-    { id: "m10", author: "Casey Nguyen", content: "Ingest backlog cleared overnight.", time: "1d ago" },
-  ],
-  "proj-6": [
-    { id: "m11", author: "Noah Fischer", content: "Pilot scope approved for two inspection sites.", time: "2d ago" },
-  ],
-}
-
-export const projectActivity: Record<string, ActivityItem[]> = {
-  "proj-1": [
-    { id: "act1", action: "updated executive summary v3", actor: "Executive summary writer", time: "Today, 9:14 AM" },
-    { id: "act2", action: "linked SharePoint strategy library", actor: "Alex Rivera", time: "Yesterday" },
-    { id: "act3", action: "imported market-intel-q2.csv", actor: "Strategy research assistant", time: "May 18" },
-  ],
-  "proj-2": [
-    { id: "act4", action: "published theme-onboarding-friction.md", actor: "Feedback synthesizer", time: "Today, 11:02 AM" },
-    { id: "act5", action: "connected Productboard integration", actor: "Jordan Kim", time: "May 17" },
-  ],
-  "proj-3": [
-    { id: "act6", action: "generated sla-breach-summary.md", actor: "Ticket trend analyst", time: "Today, 7:30 AM" },
-    { id: "act7", action: "uploaded tickets-90d-0519.csv", actor: "Chris Alvarez", time: "Today, 4:00 AM" },
-  ],
-  "proj-4": [
-    { id: "act8", action: "compiled week-20-2026-report.pptx", actor: "Sales report compiler", time: "Today, 8:45 AM" },
-    { id: "act9", action: "posted draft to #sales-leadership", actor: "Trend narrator", time: "Yesterday" },
-  ],
-  "proj-5": [
-    { id: "act10", action: "scaled ingest replicas", actor: "Taylor Brooks", time: "May 17" },
-  ],
-  "proj-6": [
-    { id: "act11", action: "onboarded inspection QA agent", actor: "Elena Vasquez", time: "May 15" },
-  ],
-}
+export const projectTasks: Record<string, Task[]> = {}
+export const projectMessages: Record<string, Message[]> = {}
+export const projectActivity: Record<string, ActivityItem[]> = {}
+export const agentActivity: Record<string, ActivityItem[]> = {}
+export const agentLogs: Record<string, AgentLogEntry[]> = {}
 
 export const directoryProfiles: Record<string, DirectoryProfile> = {
   u1: {
@@ -1181,50 +1123,6 @@ export const directoryCandidates: DirectoryCandidate[] = [
   },
 ]
 
-export const agentActivity: Record<string, ActivityItem[]> = {
-  a1: [
-    { id: "aa1", action: "summarized 12 analyst reports from SharePoint", actor: "Strategy research assistant", time: "Today, 10:22 AM" },
-    { id: "aa2", action: "updated competitive landscape metrics", actor: "Strategy research assistant", time: "Today, 8:05 AM" },
-  ],
-  a4: [
-    { id: "aa3", action: "drafted executive summary v3", actor: "Executive summary writer", time: "Today, 9:40 AM" },
-    { id: "aa4", action: "shortened AI investment section per feedback", actor: "Executive summary writer", time: "May 18" },
-  ],
-  a2: [
-    { id: "aa5", action: "clustered 847 NPS comments into 6 themes", actor: "Feedback synthesizer", time: "Today, 11:30 AM" },
-    { id: "aa6", action: "flagged onboarding friction as top detractor driver", actor: "Feedback synthesizer", time: "Yesterday" },
-  ],
-  a5: [
-    { id: "aa7", action: "generated SLA breach summary for week 20", actor: "Ticket trend analyst", time: "Today, 7:15 AM" },
-    { id: "aa8", action: "noted password-reset volume unchanged WoW", actor: "Ticket trend analyst", time: "May 18" },
-  ],
-  a7: [
-    { id: "aa9", action: "compiled week 20 sales deck from Salesforce export", actor: "Sales report compiler", time: "Today, 8:45 AM" },
-  ],
-}
-
-export const agentLogs: Record<string, AgentLogEntry[]> = {
-  a1: [
-    { id: "al1", level: "info", message: "SharePoint sync completed — 12 documents indexed", timestamp: "2026-05-19T10:22:14Z" },
-    { id: "al2", level: "info", message: "Market intel dataset loaded (4.2 MB, 1,240 rows)", timestamp: "2026-05-19T08:05:33Z" },
-    { id: "al3", level: "debug", message: "Applied skill acme-strategy-writing", timestamp: "2026-05-19T08:00:00Z" },
-  ],
-  a4: [
-    { id: "al4", level: "info", message: "Generated executive summary (1,840 tokens)", timestamp: "2026-05-19T09:40:01Z" },
-    { id: "al5", level: "info", message: "Saved draft to drafts/executive-summary-v3.docx", timestamp: "2026-05-19T09:40:05Z" },
-  ],
-  a5: [
-    { id: "al6", level: "info", message: "ServiceNow query returned 3,412 incidents (90d window)", timestamp: "2026-05-19T07:15:22Z" },
-    { id: "al7", level: "warn", message: "Password reset category still 22% of volume", timestamp: "2026-05-18T16:44:10Z" },
-  ],
-  a2: [
-    { id: "al8", level: "info", message: "Productboard sync — 34 insights fetched", timestamp: "2026-05-19T11:30:00Z" },
-  ],
-  a7: [
-    { id: "al9", level: "info", message: "Salesforce report pulled — 1,892 opportunities", timestamp: "2026-05-19T08:45:00Z" },
-  ],
-}
-
 export const agentConfigurations: Record<string, AgentConfigEntry[]> = {
   a1: [
     { key: "STRATEGY_FISCAL_YEAR", value: "2027", environment: "production", description: "Target fiscal year for strategy paper" },
@@ -1262,12 +1160,12 @@ export function getAvailableDirectoryCandidates(
   )
 }
 
-export function getAgentActivity(agentId: string) {
-  return agentActivity[agentId] ?? []
+export function getAgentActivity(_agentId: string) {
+  return [] as ActivityItem[]
 }
 
-export function getAgentLogs(agentId: string) {
-  return agentLogs[agentId] ?? []
+export function getAgentLogs(_agentId: string) {
+  return [] as AgentLogEntry[]
 }
 
 export function getAgentConfigurations(agentId: string) {
@@ -1315,8 +1213,9 @@ export function getProjectVaults(projectId: string, vaults: Vault[]) {
   return vaults.filter((vault) => vault.projectIds?.includes(projectId))
 }
 
-export function getProjectTaskCount(projectId: string) {
-  return projectTasks[projectId]?.length ?? 0
+export function getProjectTaskCount(projectId: string, tasks?: Task[]) {
+  if (tasks) return tasks.filter((task) => task.projectId === projectId).length
+  return 0
 }
 
 export function getProjectPeopleCount(projectId: string, users: User[], agents: Agent[]) {

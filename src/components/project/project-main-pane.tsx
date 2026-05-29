@@ -12,22 +12,24 @@ import {
   Users,
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import {
   formatCurrency,
   getProjectActiveAgentCount,
   getProjectAgents,
   getProjectPeopleCount,
   getProjectResources,
-  getProjectTaskCount,
   getProjectUsers,
-  projectActivity,
-  projectMessages,
-  projectTasks,
   type OrgChartMemberKind,
 } from "@/data/mock"
 import { getProjectGraph } from "@/lib/project-graph/get-project-graph"
 import type { GraphNode } from "@/lib/project-graph/types"
 import { ProjectRelationshipDiagram } from "@/components/project/project-relationship-diagram"
+import { LiveActivityFeed } from "@/components/interactions/live-activity-feed"
+import { MessageThread } from "@/components/interactions/message-thread"
+import { TaskBoard } from "@/components/interactions/task-board"
+import { RunControls } from "@/components/workflow/run-controls"
+import { WorkflowApprovals } from "@/components/workflow/workflow-approvals"
 import { TeamTab } from "@/components/team/team-tab"
 import { WorkspaceTab } from "@/components/workspace/workspace-tab"
 import { Badge } from "@/components/ui/badge"
@@ -40,7 +42,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function ProjectMainPane() {
@@ -55,6 +56,23 @@ export function ProjectMainPane() {
     agentAccessGrants,
     configurations,
   } = useApp()
+  const {
+    clock,
+    tasks: allTasks,
+    messages: allMessages,
+    getProjectTasks,
+    getProjectMessages,
+    getProjectActivity,
+    getProjectRuntime,
+    runningAgentCount,
+    pendingProposalCount,
+    startProject,
+    pauseProject,
+    stopProject,
+    setSpeed,
+    pauseClock,
+    resumeClock,
+  } = useWorkflow()
 
   const selectedProject =
     orgProjects.find((project) => project.id === projectId) ?? null
@@ -82,6 +100,8 @@ export function ProjectMainPane() {
             resources,
             grants: agentAccessGrants,
             toolList: tools,
+            tasks: getProjectTasks(selectedProject.id),
+            messages: getProjectMessages(selectedProject.id),
           })
         : null,
     [
@@ -92,6 +112,10 @@ export function ProjectMainPane() {
       resources,
       agentAccessGrants,
       tools,
+      allTasks,
+      allMessages,
+      getProjectTasks,
+      getProjectMessages,
     ],
   )
 
@@ -109,14 +133,18 @@ export function ProjectMainPane() {
     )
   }
 
-  const tasks = projectTasks[selectedProject.id] ?? []
-  const messages = projectMessages[selectedProject.id] ?? []
-  const activity = projectActivity[selectedProject.id] ?? []
+  const tasks = getProjectTasks(selectedProject.id)
+  const messages = getProjectMessages(selectedProject.id)
+  const activity = getProjectActivity(selectedProject.id)
+  const projectRuntime = getProjectRuntime(selectedProject.id)
+  const runState = projectRuntime?.runState ?? "stopped"
+  const agentsRunning = runningAgentCount(selectedProject.id)
+  const pendingApprovals = pendingProposalCount(selectedProject.id)
   const projectUsers = getProjectUsers(selectedProject.id, users)
   const projectAgents = getProjectAgents(selectedProject.id, agents)
   const projectResources = getProjectResources(selectedProject.id, resources)
   const peopleCount = getProjectPeopleCount(selectedProject.id, users, agents)
-  const taskCount = getProjectTaskCount(selectedProject.id)
+  const taskCount = tasks.length
   const openTaskCount = tasks.filter((task) => task.status !== "done").length
   const interactionCount = messages.length + taskCount
   const activeAgentCount = getProjectActiveAgentCount(selectedProject.id, agents)
@@ -166,18 +194,42 @@ export function ProjectMainPane() {
               {selectedProject.description}
             </p>
           </div>
-          <div className="flex gap-10 text-sm">
-            <div>
-              <p className="text-muted-foreground">People & agents</p>
-              <p className="font-medium">{peopleCount}</p>
+          <div className="flex flex-col items-end gap-4">
+            <RunControls
+              runState={runState}
+              onStart={() => startProject(selectedProject.id)}
+              onPause={() => pauseProject(selectedProject.id)}
+              onStop={() => stopProject(selectedProject.id)}
+              disabled={selectedProject.status === "archived"}
+              clockSpeed={{
+                speed: clock.speed,
+                ticking: clock.ticking,
+                onSetSpeed: setSpeed,
+                onPauseClock: pauseClock,
+                onResumeClock: resumeClock,
+              }}
+            />
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                {agentsRunning} agent{agentsRunning === 1 ? "" : "s"} running
+              </span>
+              {pendingApprovals > 0 && (
+                <Badge variant="outline">{pendingApprovals} approvals</Badge>
+              )}
             </div>
-            <div>
-              <p className="text-muted-foreground">Interactions</p>
-              <p className="font-medium">{interactionCount}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Budget</p>
-              <p className="font-medium">{budgetPct}% used</p>
+            <div className="flex gap-10 text-sm">
+              <div>
+                <p className="text-muted-foreground">People & agents</p>
+                <p className="font-medium">{peopleCount}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Interactions</p>
+                <p className="font-medium">{interactionCount}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Budget</p>
+                <p className="font-medium">{budgetPct}% used</p>
+              </div>
             </div>
           </div>
         </div>
@@ -275,20 +327,15 @@ export function ProjectMainPane() {
                 <CardHeader>
                   <CardTitle>Recent activity</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {activity.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No activity yet.</p>
-                  ) : (
-                    activity.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span>
-                          <span className="font-medium">{item.actor}</span>{" "}
-                          {item.action}
-                        </span>
-                        <span className="text-muted-foreground">{item.time}</span>
-                      </div>
-                    ))
-                  )}
+                <CardContent>
+                  <LiveActivityFeed
+                    projectId={selectedProject.id}
+                    emptyMessage={
+                      runState === "stopped"
+                        ? "Press Start to run the team and generate live activity."
+                        : "No activity yet."
+                    }
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -313,7 +360,9 @@ export function ProjectMainPane() {
               />
             </TabsContent>
 
-            <TabsContent value="interactions" className="mt-0">
+            <TabsContent value="interactions" className="mt-0 space-y-4">
+              <WorkflowApprovals projectId={selectedProject.id} />
+
               <Card>
                 <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -350,57 +399,18 @@ export function ProjectMainPane() {
                 </CardHeader>
 
                 <CardContent>
-                  {interactionView === "messages" ? (
-                    <div className="space-y-4">
-                      {messages.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No messages yet.</p>
-                      ) : (
-                        messages.map((msg) => (
-                          <div key={msg.id}>
-                            <div className="mb-1 flex items-center justify-between">
-                              <span className="text-sm font-medium">{msg.author}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {msg.time}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{msg.content}</p>
-                            <Separator className="mt-4" />
-                          </div>
-                        ))
-                      )}
+                  {runState === "stopped" ? (
+                    <div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
+                      <p className="text-sm font-medium">Team is stopped</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Press Start in the project header to run agents and enable live
+                        interactions.
+                      </p>
                     </div>
+                  ) : interactionView === "messages" ? (
+                    <MessageThread projectId={selectedProject.id} messages={messages} />
                   ) : (
-                    <div className="space-y-3">
-                      {tasks.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No tasks yet.</p>
-                      ) : (
-                        tasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
-                          >
-                            <div>
-                              <p className="font-medium">{task.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {task.assignee} · due {task.due}
-                              </p>
-                            </div>
-                            <Badge
-                              variant={
-                                task.status === "done"
-                                  ? "secondary"
-                                  : task.status === "in_progress"
-                                    ? "default"
-                                    : "outline"
-                              }
-                              className="capitalize"
-                            >
-                              {task.status.replace("_", " ")}
-                            </Badge>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                    <TaskBoard projectId={selectedProject.id} tasks={tasks} />
                   )}
                 </CardContent>
               </Card>
@@ -410,19 +420,18 @@ export function ProjectMainPane() {
               <Card>
                 <CardHeader>
                   <CardTitle>Activity log</CardTitle>
+                  <CardDescription>Live feed of project actions.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {activity.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      <div className="mt-1 size-2 shrink-0 rounded-full bg-primary" />
-                      <div>
-                        <p className="text-sm">
-                          <span className="font-medium">{item.actor}</span> {item.action}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
+                <CardContent>
+                  <LiveActivityFeed
+                    projectId={selectedProject.id}
+                    items={activity}
+                    emptyMessage={
+                      runState === "stopped"
+                        ? "Press Start to run the team."
+                        : "No activity recorded yet."
+                    }
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -5,7 +5,9 @@ import {
   tools,
   type Agent,
   type AgentAccessGrant,
+  type Message,
   type Resource,
+  type Task,
   type Tool,
   type User,
   type Vault,
@@ -30,6 +32,8 @@ export function createProjectGraphInput(
     resources: Resource[]
     grants?: AgentAccessGrant[]
     toolList?: Tool[]
+    tasks?: Task[]
+    messages?: Message[]
   },
   options?: GraphBuildOptions,
 ): BuildProjectGraphInput | null {
@@ -46,6 +50,8 @@ export function createProjectGraphInput(
     skills: getOrgLibrarySkills(project.orgId),
     tools: ctx.toolList ?? tools,
     grants: ctx.grants ?? agentAccessGrants,
+    tasks: ctx.tasks,
+    messages: ctx.messages,
     options,
   }
 }
@@ -59,6 +65,8 @@ export function getProjectGraph(
     resources: Resource[]
     grants?: AgentAccessGrant[]
     toolList?: Tool[]
+    tasks?: Task[]
+    messages?: Message[]
   },
   options?: GraphBuildOptions,
 ): ProjectGraph | null {

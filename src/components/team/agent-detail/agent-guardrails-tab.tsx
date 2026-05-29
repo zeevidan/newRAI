@@ -8,6 +8,7 @@ import {
 } from "@/data/agent-config-mock"
 import { getOrgPolicies, getPlatformPolicies } from "@/data/mock"
 import { SearchAddPanel } from "@/components/team/agent-detail/search-add-panel"
+import { NONE_SELECT_VALUE, noneSelectItem } from "@/lib/select-items"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -45,6 +46,20 @@ export function AgentGuardrailsTab({ agentId, projectId, onSaved }: AgentGuardra
   const guardrailOptions = useMemo(() => getOrgGuardrails(currentOrg.id), [currentOrg.id])
   const approvalOptions = useMemo(() => getOrgApprovalPolicies(currentOrg.id), [currentOrg.id])
   const egressOptions = useMemo(() => getOrgEgressAllowlists(currentOrg.id), [currentOrg.id])
+  const approvalItems = useMemo(
+    () => [
+      noneSelectItem("None"),
+      ...approvalOptions.map((policy) => ({ value: policy.id, label: policy.name })),
+    ],
+    [approvalOptions],
+  )
+  const egressItems = useMemo(
+    () => [
+      noneSelectItem("Platform default"),
+      ...egressOptions.map((list) => ({ value: list.id, label: list.name })),
+    ],
+    [egressOptions],
+  )
 
   const [policyIds, setPolicyIds] = useState(saved.policyIds)
   const [guardrailIds, setGuardrailIds] = useState(saved.guardrailIds)
@@ -132,14 +147,17 @@ export function AgentGuardrailsTab({ agentId, projectId, onSaved }: AgentGuardra
           <div className="grid gap-2 max-w-md">
             <Label>Approval policy</Label>
             <Select
-              value={approvalPolicyId || "__none__"}
-              onValueChange={(v) => setApprovalPolicyId(!v || v === "__none__" ? "" : v)}
+              items={approvalItems}
+              value={approvalPolicyId || NONE_SELECT_VALUE}
+              onValueChange={(v) =>
+                setApprovalPolicyId(!v || v === NONE_SELECT_VALUE ? "" : v)
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
+                <SelectItem value={NONE_SELECT_VALUE}>None</SelectItem>
                 {approvalOptions.map((policy) => (
                   <SelectItem key={policy.id} value={policy.id}>
                     {policy.name}
@@ -167,14 +185,17 @@ export function AgentGuardrailsTab({ agentId, projectId, onSaved }: AgentGuardra
           <div className="grid gap-2 max-w-md">
             <Label>Allowlist</Label>
             <Select
-              value={egressAllowlistId || "__none__"}
-              onValueChange={(v) => setEgressAllowlistId(!v || v === "__none__" ? "" : v)}
+              items={egressItems}
+              value={egressAllowlistId || NONE_SELECT_VALUE}
+              onValueChange={(v) =>
+                setEgressAllowlistId(!v || v === NONE_SELECT_VALUE ? "" : v)
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Platform default" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">Platform default</SelectItem>
+                <SelectItem value={NONE_SELECT_VALUE}>Platform default</SelectItem>
                 {egressOptions.map((list) => (
                   <SelectItem key={list.id} value={list.id}>
                     {list.name}

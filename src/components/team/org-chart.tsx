@@ -13,6 +13,7 @@ import {
 import type { OrgChartMember, OrgChartMemberKind } from "@/data/mock"
 import { getOrgChartAvatarMarkup } from "@/components/team/agent-avatar"
 import { cn } from "@/lib/utils"
+import type { RunState } from "@/lib/workflow/types"
 
 const BRAND = "#0049FF"
 
@@ -28,6 +29,8 @@ interface ChartDatum {
   model?: string
   status?: string
   avatar?: OrgChartMember["avatar"]
+  runState?: RunState
+  currentAction?: string
   _expanded?: boolean
 }
 
@@ -52,7 +55,10 @@ function getChartRootId(members: OrgChartMember[], excludeId?: string): string |
   return root?.id ?? null
 }
 
-function membersToChartData(members: OrgChartMember[]): ChartDatum[] {
+function membersToChartData(
+  members: OrgChartMember[],
+  agentRunStates?: Record<string, { runState: RunState; currentAction?: string }>,
+): ChartDatum[] {
   const data = members.map((member) => ({
     id: member.id,
     parentId: member.managerId ?? "",
@@ -65,6 +71,9 @@ function membersToChartData(members: OrgChartMember[]): ChartDatum[] {
     model: member.model,
     status: member.status,
     avatar: member.avatar,
+    runState: member.kind === "agent" ? agentRunStates?.[member.id]?.runState : undefined,
+    currentAction:
+      member.kind === "agent" ? agentRunStates?.[member.id]?.currentAction : undefined,
     _expanded: true,
   }))
 
@@ -79,6 +88,26 @@ function membersToChartData(members: OrgChartMember[]): ChartDatum[] {
   )
 }
 
+function membersStructuralSignature(members: OrgChartMember[]) {
+  return members
+    .map(
+      (member) =>
+        `${member.id}:${member.managerId ?? ""}:${member.name}:${member.kind}:${member.status ?? ""}:${member.model ?? ""}`,
+    )
+    .sort()
+    .join("|")
+}
+
+function agentRunStatesSignature(
+  agentRunStates?: Record<string, { runState: RunState; currentAction?: string }>,
+) {
+  if (!agentRunStates) return ""
+  return Object.entries(agentRunStates)
+    .map(([id, state]) => `${id}:${state.runState}:${state.currentAction ?? ""}`)
+    .sort()
+    .join("|")
+}
+
 function renderNodeContent(node: {
   data: ChartDatum
   width: number
@@ -89,6 +118,7 @@ function renderNodeContent(node: {
   const isRoot = depth === 0
   const isAgent = data.kind === "agent"
   const isPaused = data.status === "paused"
+  const isRunning = data.runState === "running"
 
   const avatarBg = isAgent
     ? isPaused
@@ -130,8 +160,11 @@ function renderNodeContent(node: {
           line-height:1;overflow:hidden;flex-shrink:0;
           ${isRoot && !isAgent ? "box-shadow:0 0 0 3px rgba(0,73,255,0.15);" : ""}
         ">${avatarIsSvg ? `<span style="display:flex;align-items:center;justify-content:center;width:16px;height:16px;line-height:0;">${avatarInner}</span>` : avatarInner}</div>
-        <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.2;margin-bottom:4px;">${data.name}</div>
-        <div style="font-size:11px;color:#64748b;line-height:1.3;">${subtitle}</div>
+        <div style="font-size:13px;font-weight:600;color:#0f172a;line-height:1.2;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:6px;">
+          ${isRunning ? `<span style="width:7px;height:7px;border-radius:999px;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);"></span>` : ""}
+          ${data.name}
+        </div>
+        <div style="font-size:11px;color:#64748b;line-height:1.3;">${isRunning && data.currentAction ? data.currentAction : subtitle}</div>
       </div>
     </div>
   `
@@ -177,6 +210,7 @@ export interface OrgChartHandle {
 interface OrgChartProps {
   members: OrgChartMember[]
   projectId: string | null
+  agentRunStates?: Record<string, { runState: RunState; currentAction?: string }>
   className?: string
   variant?: "card" | "content"
   onSelectMember: (kind: OrgChartMemberKind, id: string) => void
@@ -187,6 +221,7 @@ export const OrgChart = forwardRef<OrgChartHandle, OrgChartProps>(function OrgCh
   {
     members,
     projectId: _projectId,
+    agentRunStates,
     className,
     variant = "card",
     onSelectMember,
@@ -196,16 +231,19 @@ export const OrgChart = forwardRef<OrgChartHandle, OrgChartProps>(function OrgCh
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<D3OrgChart<ChartDatum> | null>(null)
-  const chartData = useMemo(() => membersToChartData(members), [members])
+  const onSelectMemberRef = useRef(onSelectMember)
+  onSelectMemberRef.current = onSelectMember
+
+  const structuralSignature = useMemo(
+    () => membersStructuralSignature(members),
+    [members],
+  )
+  const runtimeSignature = useMemo(
+    () => agentRunStatesSignature(agentRunStates),
+    [agentRunStates],
+  )
 
   const chartRootId = useMemo(() => getChartRootId(members), [members])
-
-  const handleNodeClick = useCallback(
-    (node: { data: ChartDatum }) => {
-      onSelectMember(node.data.kind, node.data.id)
-    },
-    [onSelectMember],
-  )
 
   const openCreate = (kind: OrgChartMemberKind, managerId?: string | null) => {
     onCreateMember(kind, managerId ?? chartRootId)
@@ -213,10 +251,16 @@ export const OrgChart = forwardRef<OrgChartHandle, OrgChartProps>(function OrgCh
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container || chartData.length === 0) return
+    if (!container || members.length === 0) return
 
     container.innerHTML = ""
-    const chart = createChart(container, chartData, handleNodeClick)
+    const chart = createChart(
+      container,
+      membersToChartData(members, agentRunStates),
+      (node) => {
+        onSelectMemberRef.current(node.data.kind, node.data.id)
+      },
+    )
     chartRef.current = chart
     chart.fit({ animate: false, scale: true })
 
@@ -224,7 +268,15 @@ export const OrgChart = forwardRef<OrgChartHandle, OrgChartProps>(function OrgCh
       container.innerHTML = ""
       chartRef.current = null
     }
-  }, [chartData, handleNodeClick])
+    // Remount only when org structure changes, not on every workflow tick.
+  }, [structuralSignature])
+
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart || members.length === 0) return
+    chart.data(membersToChartData(members, agentRunStates)).render()
+    // Patch node labels/indicators when agent run state changes.
+  }, [runtimeSignature])
 
   const runChartAction = useCallback((action: "fit" | "expand" | "collapse") => {
     const chart = chartRef.current

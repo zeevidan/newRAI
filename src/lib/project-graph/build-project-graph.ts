@@ -2,9 +2,11 @@ import type { SkillRecord } from "@/data/skills-mock"
 import type {
   Agent,
   AgentAccessGrant,
+  Message,
   Project,
   ProjectFileNode,
   Resource,
+  Task,
   Tool,
   User,
   Vault,
@@ -33,6 +35,8 @@ export interface BuildProjectGraphInput {
   skills: SkillRecord[]
   tools: Tool[]
   grants: AgentAccessGrant[]
+  tasks?: Task[]
+  messages?: Message[]
   options?: GraphBuildOptions
 }
 
@@ -67,6 +71,8 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
     skills,
     tools,
     grants,
+    tasks = [],
+    messages = [],
     options = {},
   } = input
 
@@ -294,6 +300,45 @@ export function buildProjectGraph(input: BuildProjectGraphInput): ProjectGraph {
         target,
       })
     }
+  }
+
+  function memberNodeId(memberId: string) {
+    if (projectUsers.some((user) => user.id === memberId)) {
+      return graphNodeId("person", memberId)
+    }
+    if (projectAgents.some((agent) => agent.id === memberId)) {
+      return graphNodeId("agent", memberId)
+    }
+    return null
+  }
+
+  const nodeIds = new Set(nodes.map((node) => node.id))
+
+  for (const task of tasks.filter((item) => item.projectId === projectId && item.assigneeId)) {
+    const source = memberNodeId(task.creatorId)
+    const target = memberNodeId(task.assigneeId!)
+    if (!source || !target || !nodeIds.has(source) || !nodeIds.has(target)) continue
+    edges.push({
+      id: edgeId("assigned_to", source, target),
+      kind: "assigned_to",
+      source,
+      target,
+      label: task.title,
+    })
+  }
+
+  for (const message of messages.filter(
+    (item) => item.projectId === projectId && item.recipientId,
+  )) {
+    const source = memberNodeId(message.authorId)
+    const target = memberNodeId(message.recipientId!)
+    if (!source || !target || !nodeIds.has(source) || !nodeIds.has(target)) continue
+    edges.push({
+      id: edgeId("messaged", source, target),
+      kind: "messaged",
+      source,
+      target,
+    })
   }
 
   let result = applyWorkspaceAccessRules(nodes, edges)

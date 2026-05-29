@@ -14,6 +14,7 @@ import {
 } from "@/data/mock"
 import { MultiSelectPanel } from "@/components/team/agent-detail/multi-select-panel"
 import { WorkspaceFolderTree } from "@/components/team/agent-detail/workspace-folder-tree"
+import { fromValueLabelPairs, WORKSPACE_SCOPE_ITEMS } from "@/lib/select-items"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -109,6 +110,7 @@ export function AgentAccessDataTab({ agentId, projectId, onSaved }: AgentAccessD
           <div className="grid gap-2 max-w-xs">
             <Label>Scope</Label>
             <Select
+              items={WORKSPACE_SCOPE_ITEMS}
               value={workspaceScope}
               onValueChange={(v) => v && setWorkspaceScope(v as WorkspaceScope)}
             >
@@ -186,6 +188,7 @@ export function AgentAccessDataTab({ agentId, projectId, onSaved }: AgentAccessD
           <div className="grid gap-2 max-w-md">
             <Label>Classification tier</Label>
             <Select
+              items={fromValueLabelPairs(dataClassificationOptions)}
               value={classification}
               onValueChange={(v) => v && setClassification(v as DataClassificationTier)}
             >

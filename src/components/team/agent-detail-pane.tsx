@@ -12,10 +12,9 @@ import {
   Wrench,
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import {
-  getAgentActivity,
   getAgentConfigurations,
-  getAgentLogs,
   resolveMemberName,
   type AgentAvatar,
   type EntityStatus,
@@ -30,7 +29,10 @@ import { AgentBehaviorTab } from "@/components/team/agent-detail/agent-behavior-
 import { AgentBudgetTab } from "@/components/team/agent-detail/agent-budget-tab"
 import { AgentContextTab } from "@/components/team/agent-detail/agent-context-tab"
 import { AgentGuardrailsTab } from "@/components/team/agent-detail/agent-guardrails-tab"
+import { AgentHeartbeatTab } from "@/components/team/agent-detail/agent-heartbeat-tab"
 import { AgentSkillsToolsTab } from "@/components/team/agent-detail/agent-skills-tools-tab"
+import { LiveActivityFeed } from "@/components/interactions/live-activity-feed"
+import { RunControls } from "@/components/workflow/run-controls"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -52,6 +54,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { ReportsToCombobox } from "@/components/team/reports-to-combobox"
+import { ENTITY_STATUS_ITEMS } from "@/lib/select-items"
 
 const MODELS = ["gpt-4.1", "gpt-4.1-mini", "claude-sonnet"] as const
 
@@ -79,6 +82,14 @@ export function AgentDetailPane({
   onSaved,
 }: AgentDetailPaneProps) {
   const { users, agents, updateAgent } = useApp()
+  const {
+    getAgentRuntime,
+    getAgentActivityItems,
+    getAgentLogItems,
+    startAgent,
+    pauseAgent,
+    stopAgent,
+  } = useWorkflow()
   const agent = agents.find((item) => item.id === agentId)
 
   const [name, setName] = useState(agent?.name ?? "")
@@ -88,8 +99,9 @@ export function AgentDetailPane({
   const [managerId, setManagerId] = useState<string | null>(agent?.managerId ?? null)
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
 
-  const activity = getAgentActivity(agentId)
-  const logs = getAgentLogs(agentId)
+  const runtime = getAgentRuntime(agentId, projectId)
+  const activity = getAgentActivityItems(agentId)
+  const logs = getAgentLogItems(agentId)
   const configurations = getAgentConfigurations(agentId)
 
   const chartRootId = useMemo(
@@ -182,8 +194,19 @@ export function AgentDetailPane({
                   Reports to {managerName}
                 </p>
               )}
+              {runtime?.currentAction && runtime.runState === "running" && (
+                <p className="mt-2 text-xs text-emerald-600">{runtime.currentAction}</p>
+              )}
             </div>
           </div>
+          <RunControls
+            runState={runtime?.runState ?? "stopped"}
+            onStart={() => startAgent(agentId, projectId)}
+            onPause={() => pauseAgent(agentId, projectId)}
+            onStop={() => stopAgent(agentId, projectId)}
+            disabled={agent.status === "archived"}
+            size="sm"
+          />
         </CardHeader>
       </Card>
 
@@ -217,6 +240,7 @@ export function AgentDetailPane({
             <Shield className="size-4" />
             Guardrails
           </TabsTrigger>
+          <TabsTrigger value="heartbeat">Heartbeat</TabsTrigger>
           <TabsTrigger value="budget">
             <Wallet className="size-4" />
             Budget
@@ -273,7 +297,14 @@ export function AgentDetailPane({
 
                 <div className="grid gap-2">
                   <Label>Model</Label>
-                  <Select value={model} onValueChange={(value) => value && setModel(value)}>
+                  <Select
+                    items={MODELS.map((modelOption) => ({
+                      value: modelOption,
+                      label: modelOption,
+                    }))}
+                    value={model}
+                    onValueChange={(value) => value && setModel(value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -290,6 +321,7 @@ export function AgentDetailPane({
                 <div className="grid gap-2">
                   <Label>Status</Label>
                   <Select
+                    items={ENTITY_STATUS_ITEMS}
                     value={status}
                     onValueChange={(value) => value && setStatus(value as EntityStatus)}
                   >
@@ -339,6 +371,10 @@ export function AgentDetailPane({
 
         <TabsContent value="guardrails" className="mt-0">
           <AgentGuardrailsTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
+        </TabsContent>
+
+        <TabsContent value="heartbeat" className="mt-0">
+          <AgentHeartbeatTab agentId={agentId} projectId={projectId} onSaved={onSaved} />
         </TabsContent>
 
         <TabsContent value="budget" className="mt-0">
@@ -394,22 +430,13 @@ export function AgentDetailPane({
               <CardTitle className="text-base">Recent activity</CardTitle>
               <CardDescription>Actions performed by this agent on the project.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {activity.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No activity recorded.</p>
-              ) : (
-                activity.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="mt-1.5 size-2 shrink-0 rounded-full bg-indigo-500" />
-                    <div>
-                      <p className="text-sm">
-                        <span className="font-medium">{item.actor}</span> {item.action}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{item.time}</p>
-                    </div>
-                  </div>
-                ))
-              )}
+            <CardContent>
+              <LiveActivityFeed
+                agentId={agentId}
+                items={activity}
+                showAgentBadge
+                emptyMessage="No activity recorded. Start the agent to see live actions."
+              />
             </CardContent>
           </Card>
         </TabsContent>

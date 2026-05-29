@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
-import { Building2, RefreshCw, Shield, UserRound } from "lucide-react"
+import { Building2, ListTodo, Mail, RefreshCw, Shield, UserRound } from "lucide-react"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import {
   getDirectoryProfile,
   resolveMemberName,
   type OrgChartMember,
 } from "@/data/mock"
+import { formatRelativeTime } from "@/lib/workflow/format"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -58,6 +60,7 @@ export function PersonDetailPane({
   onSaved,
 }: PersonDetailPaneProps) {
   const { users, agents, updateUser } = useApp()
+  const { clock, getProjectTasks, getProjectMessages } = useWorkflow()
   const user = users.find((item) => item.id === userId)
   const directory = getDirectoryProfile(userId)
 
@@ -102,6 +105,22 @@ export function PersonDetailPane({
   const managerName = user.managerId
     ? resolveMemberName(user.managerId, users, agents)
     : null
+
+  const inboxTasks = useMemo(
+    () =>
+      getProjectTasks(projectId).filter(
+        (task) => task.assigneeId === userId && task.assigneeKind === "user",
+      ),
+    [getProjectTasks, projectId, userId],
+  )
+
+  const inboxMessages = useMemo(
+    () =>
+      getProjectMessages(projectId).filter(
+        (message) => message.recipientId === userId && message.recipientKind === "user",
+      ),
+    [getProjectMessages, projectId, userId],
+  )
 
   return (
     <div className="space-y-6">
@@ -224,6 +243,58 @@ export function PersonDetailPane({
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Mail className="size-4" />
+            Inbox on this project
+          </CardTitle>
+          <CardDescription>
+            Tasks assigned to {user.name} and messages directed to them.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-3">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <ListTodo className="size-4" />
+              Assigned tasks ({inboxTasks.length})
+            </p>
+            {inboxTasks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tasks assigned.</p>
+            ) : (
+              inboxTasks.map((task) => (
+                <div key={task.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+                  <p className="font-medium">{task.title}</p>
+                  <p className="text-xs capitalize text-muted-foreground">
+                    {task.status.replace("_", " ")} · updated{" "}
+                    {formatRelativeTime(task.updatedAt, clock.simNow)}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="space-y-3">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Mail className="size-4" />
+              Direct messages ({inboxMessages.length})
+            </p>
+            {inboxMessages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No direct messages.</p>
+            ) : (
+              inboxMessages.map((message) => (
+                <div key={message.id} className="rounded-lg border border-border px-3 py-2 text-sm">
+                  <p className="text-xs text-muted-foreground">
+                    From {resolveMemberName(message.authorId, users, agents)} ·{" "}
+                    {formatRelativeTime(message.createdAt, clock.simNow)}
+                  </p>
+                  <p className="mt-1">{message.content}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
