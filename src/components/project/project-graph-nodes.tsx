@@ -22,6 +22,7 @@ export interface ProjectGraphNodeData {
   dimmed?: boolean
   highlighted?: boolean
   focused?: boolean
+  working?: boolean
   connectedTarget?: boolean
   connectedSource?: boolean
   [key: string]: unknown
@@ -64,6 +65,8 @@ function ProjectGraphNodeComponent({ data }: NodeProps) {
         nodeData.dimmed && "border-border/40 text-muted-foreground/60 saturate-50",
         nodeData.highlighted && "ring-2 ring-primary/30",
         nodeData.focused && "ring-2 ring-primary shadow-md",
+        nodeData.working &&
+          "border-emerald-500/70 bg-emerald-500/10 shadow-[0_0_14px_rgba(16,185,129,0.35)] animate-agent-working",
       )}
     >
       <Handle

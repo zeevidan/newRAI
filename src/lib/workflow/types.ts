@@ -2,6 +2,7 @@ import type {
   ActivityItem,
   Agent,
   AgentLogEntry,
+  MemberKind,
   Message,
   OrgChartMemberKind,
   Task,
@@ -88,4 +89,19 @@ export const WORKFLOW_LIMITS = {
   maxActivityPerScope: 200,
   maxLogsPerAgent: 200,
   realTickMs: 1000,
+  interactionPulseMs: 2500,
 } as const
+
+export type InteractionPulseKind = "heartbeat" | "messaged" | "assigned_to"
+
+export interface GraphInteractionPulse {
+  id: string
+  projectId: string
+  kind: InteractionPulseKind
+  sourceMemberId: string
+  sourceKind: MemberKind
+  targetMemberId?: string
+  targetKind?: MemberKind
+  label?: string
+  expiresAt: number
+}

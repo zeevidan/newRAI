@@ -58,8 +58,6 @@ export function ProjectMainPane() {
   } = useApp()
   const {
     clock,
-    tasks: allTasks,
-    messages: allMessages,
     getProjectTasks,
     getProjectMessages,
     getProjectActivity,
@@ -100,8 +98,6 @@ export function ProjectMainPane() {
             resources,
             grants: agentAccessGrants,
             toolList: tools,
-            tasks: getProjectTasks(selectedProject.id),
-            messages: getProjectMessages(selectedProject.id),
           })
         : null,
     [
@@ -112,10 +108,6 @@ export function ProjectMainPane() {
       resources,
       agentAccessGrants,
       tools,
-      allTasks,
-      allMessages,
-      getProjectTasks,
-      getProjectMessages,
     ],
   )
 
@@ -282,8 +274,8 @@ export function ProjectMainPane() {
                     <CardTitle>Project relationships</CardTitle>
                     <CardDescription>
                       How people, agents, skills, tools, and resources connect on
-                      this project. Click a person or agent to highlight their
-                      relationships; click a resource to open it.
+                      this project. Agents glow green while beating; messages and
+                      task handoffs flash briefly between people and agents.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

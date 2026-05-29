@@ -162,6 +162,39 @@
   pointer-events: none !important;
 }
 
+@keyframes agent-working-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.55);
+  }
+}
+
+.animate-agent-working {
+  animation: agent-working-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-edge-flash {
+  0% {
+    opacity: 1;
+    stroke-width: 3;
+  }
+  65% {
+    opacity: 0.9;
+    stroke-width: 2.5;
+  }
+  100% {
+    opacity: 0;
+    stroke-width: 1.5;
+  }
+}
+
+.project-relationship-flow-edges .react-flow__edge.project-relationship-pulse-edge .react-flow__edge-path {
+  animation: pulse-edge-flash 2.5s ease-out forwards;
+}
+
 /* Team member detail sheet — wide panel for parameter-heavy layouts */
 [data-slot="sheet-content"][data-size="wide"][data-side="right"],
 [data-slot="sheet-content"][data-size="wide"][data-side="left"] {

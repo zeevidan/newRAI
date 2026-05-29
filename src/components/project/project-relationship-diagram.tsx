@@ -10,6 +10,7 @@ import {
   type Viewport,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
+import { useWorkflow } from "@/context/workflow-context"
 import { filterProjectGraph } from "@/lib/project-graph/build-project-graph"
 import { applyGroupedLayout } from "@/lib/project-graph/layout-grouped"
 import {
@@ -20,6 +21,11 @@ import {
   type GraphNodeFilter,
   type ProjectGraph,
 } from "@/lib/project-graph/types"
+import {
+  getWorkingNodeIds,
+  pulsesToGraphEdges,
+} from "@/lib/workflow/interaction-pulses"
+import { WORKFLOW_LIMITS } from "@/lib/workflow/types"
 import {
   projectGraphNodeTypes,
   type ProjectGraphNodeData,
@@ -68,6 +74,7 @@ function toFlowNodes(
   positions: Map<string, { x: number; y: number }>,
   highlight: { nodeIds: Set<string>; edgeIds: Set<string> },
   focusedNodeId: string | null,
+  workingNodeIds: Set<string>,
 ): Node[] {
   const isFocusActive = focusedNodeId !== null
 
@@ -83,6 +90,7 @@ function toFlowNodes(
       dimmed: isFocusActive && !highlight.nodeIds.has(node.id),
       highlighted: isFocusActive && highlight.nodeIds.has(node.id) && node.id !== focusedNodeId,
       focused: node.id === focusedNodeId,
+      working: workingNodeIds.has(node.id),
       connectedTarget: edges.some((edge) => edge.target === node.id),
       connectedSource: edges.some((edge) => edge.source === node.id),
     } satisfies ProjectGraphNodeData,
@@ -91,12 +99,13 @@ function toFlowNodes(
 
 function toFlowEdges(
   edges: ProjectGraph["edges"],
+  pulseEdges: GraphEdge[],
   highlight: { nodeIds: Set<string>; edgeIds: Set<string> },
   focusedNodeId: string | null,
 ): Edge[] {
   const isFocusActive = focusedNodeId !== null
 
-  return edges.map((edge) => {
+  const staticEdges = edges.map((edge) => {
     const style = edgeStyles[edge.kind]
     const isHighlighted = highlight.edgeIds.has(edge.id)
 
@@ -120,6 +129,32 @@ function toFlowEdges(
       labelStyle: { fontSize: 10 },
     }
   })
+
+  const pulseFlowEdges = pulseEdges.map((edge) => {
+    const style = edgeStyles[edge.kind]
+
+    return {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      label: edge.label,
+      type: "default",
+      pathOptions: { curvature: 0.6 },
+      zIndex: 10,
+      animated: true,
+      className: "project-relationship-pulse-edge",
+      style: {
+        stroke: style.stroke,
+        strokeDasharray: style.strokeDasharray,
+        strokeWidth: 2.5,
+        opacity: 1,
+        animationDuration: `${WORKFLOW_LIMITS.interactionPulseMs}ms`,
+      },
+      labelStyle: { fontSize: 10 },
+    }
+  })
+
+  return [...staticEdges, ...pulseFlowEdges]
 }
 
 const filterLabels: Record<GraphNodeFilter, string> = {
@@ -151,6 +186,8 @@ export function ProjectRelationshipDiagram({
   onSelectNode,
   className,
 }: ProjectRelationshipDiagramProps) {
+  const { getProjectInteractionPulses } = useWorkflow()
+  const interactionPulses = getProjectInteractionPulses(graph.projectId)
   const [filters, setFilters] = useState<GraphNodeFilter[]>(DEFAULT_GRAPH_FILTERS)
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null)
   const [viewport, setViewport] = useState<Viewport | undefined>(undefined)
@@ -177,9 +214,34 @@ export function ProjectRelationshipDiagram({
   const displayGraph = useMemo(
     () => ({
       ...filteredGraph,
-      edges: filteredGraph.edges.filter((edge) => edge.kind !== "reports_to"),
+      edges: filteredGraph.edges.filter(
+        (edge) =>
+          edge.kind !== "reports_to" &&
+          edge.kind !== "assigned_to" &&
+          edge.kind !== "messaged",
+      ),
     }),
     [filteredGraph],
+  )
+
+  const nodeIds = useMemo(
+    () => new Set(displayGraph.nodes.map((node) => node.id)),
+    [displayGraph.nodes],
+  )
+
+  const pulseEdges = useMemo(
+    () => pulsesToGraphEdges(interactionPulses, nodeIds),
+    [interactionPulses, nodeIds],
+  )
+
+  const workingNodeIds = useMemo(
+    () => getWorkingNodeIds(interactionPulses),
+    [interactionPulses],
+  )
+
+  const visibleEdges = useMemo(
+    () => [...displayGraph.edges, ...pulseEdges],
+    [displayGraph.edges, pulseEdges],
   )
 
   useEffect(() => {
@@ -188,8 +250,8 @@ export function ProjectRelationshipDiagram({
   }, [graph.projectId, filters])
 
   const highlight = useMemo(
-    () => getRelationshipHighlight(focusedNodeId, displayGraph.edges),
-    [focusedNodeId, displayGraph.edges],
+    () => getRelationshipHighlight(focusedNodeId, visibleEdges),
+    [focusedNodeId, visibleEdges],
   )
 
   const positions = useMemo(
@@ -198,12 +260,27 @@ export function ProjectRelationshipDiagram({
   )
 
   const flowNodes = useMemo(
-    () => toFlowNodes(displayGraph.nodes, displayGraph.edges, positions, highlight, focusedNodeId),
-    [displayGraph.nodes, displayGraph.edges, positions, highlight, focusedNodeId],
+    () =>
+      toFlowNodes(
+        displayGraph.nodes,
+        visibleEdges,
+        positions,
+        highlight,
+        focusedNodeId,
+        workingNodeIds,
+      ),
+    [
+      displayGraph.nodes,
+      visibleEdges,
+      positions,
+      highlight,
+      focusedNodeId,
+      workingNodeIds,
+    ],
   )
   const flowEdges = useMemo(
-    () => toFlowEdges(displayGraph.edges, highlight, focusedNodeId),
-    [displayGraph.edges, highlight, focusedNodeId],
+    () => toFlowEdges(displayGraph.edges, pulseEdges, highlight, focusedNodeId),
+    [displayGraph.edges, pulseEdges, highlight, focusedNodeId],
   )
 
   const layoutNodes = useMemo(
@@ -356,6 +433,15 @@ export function ProjectRelationshipDiagram({
         </span>
         <span className="inline-flex items-center gap-1">
           <span className="size-2 rounded-full bg-sky-500" /> Accesses
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" /> Agent heartbeat
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="size-2 rounded-full bg-pink-500 animate-pulse" /> Message (live)
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="size-2 rounded-full bg-amber-500 animate-pulse" /> Task handoff (live)
         </span>
       </div>
     </div>

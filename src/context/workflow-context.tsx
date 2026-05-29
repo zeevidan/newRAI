@@ -31,9 +31,16 @@ import {
 } from "@/data/workflow-seed"
 import { getDueAgents, runBeat } from "@/lib/workflow/engine"
 import {
+  appendBeatInteractionPulses,
+  appendMessagePulse,
+  appendTaskPulse,
+  pruneInteractionPulses,
+} from "@/lib/workflow/interaction-pulses"
+import {
   WORKFLOW_LIMITS,
   runtimeKey,
   type AgentRuntime,
+  type GraphInteractionPulse,
   type ProjectRuntime,
   type RunState,
   type WorkflowClock,
@@ -74,6 +81,7 @@ interface WorkflowContextValue {
   activity: ActivityItem[]
   logs: AgentLogEntry[]
   proposals: WorkflowProposal[]
+  interactionPulses: GraphInteractionPulse[]
   agentRuntimes: AgentRuntime[]
   projectRuntimes: ProjectRuntime[]
   getProjectTasks: (projectId: string) => Task[]
@@ -83,6 +91,7 @@ interface WorkflowContextValue {
   getAgentLogItems: (agentId: string) => AgentLogEntry[]
   getAgentRuntime: (agentId: string, projectId: string) => AgentRuntime | undefined
   getProjectRuntime: (projectId: string) => ProjectRuntime | undefined
+  getProjectInteractionPulses: (projectId: string) => GraphInteractionPulse[]
   runningAgentCount: (projectId: string) => number
   pendingProposalCount: (projectId: string) => number
   startAgent: (agentId: string, projectId: string) => void
@@ -135,6 +144,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [activity, setActivity] = useState<ActivityItem[]>(() => [...initialActivity])
   const [logs, setLogs] = useState<AgentLogEntry[]>(() => [...initialAgentLogs])
   const [proposals, setProposals] = useState<WorkflowProposal[]>([])
+  const [interactionPulses, setInteractionPulses] = useState<GraphInteractionPulse[]>([])
   const [agentRuntimes, setAgentRuntimes] = useState<AgentRuntime[]>(() =>
     buildInitialRuntimes(agents),
   )
@@ -181,6 +191,16 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     })
   }, [agents])
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setInteractionPulses((prev) => {
+        const next = pruneInteractionPulses(prev)
+        return next.length === prev.length ? prev : next
+      })
+    }, 200)
+    return () => window.clearInterval(interval)
+  }, [])
+
   const applyBeatResults = useCallback(
     (
       agentId: string,
@@ -214,6 +234,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       if (beatResult.proposals.length > 0) {
         setProposals((prev) => [...prev, ...beatResult.proposals])
       }
+      setInteractionPulses((prev) =>
+        appendBeatInteractionPulses(prev, projectId, agentId, beatResult),
+      )
       setAgentRuntimes((prev) =>
         prev.map((rt) =>
           rt.agentId === agentId && rt.projectId === projectId
@@ -411,6 +434,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         createdAt: iso,
       }
       setMessages((prev) => [...prev, message])
+      setInteractionPulses((prev) => appendMessagePulse(prev, message))
       setActivity((prev) =>
         capActivity([
           ...prev,
@@ -458,6 +482,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         dueAt: input.dueAt,
       }
       setTasks((prev) => [...prev, task])
+      setInteractionPulses((prev) => appendTaskPulse(prev, task))
       setActivity((prev) =>
         capActivity([
           ...prev,
@@ -496,6 +521,18 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         ),
       )
       const task = stateRef.current.tasks.find((item) => item.id === taskId)
+      if (task) {
+        setInteractionPulses((prev) =>
+          appendTaskPulse(prev, {
+            projectId: task.projectId,
+            creatorId: task.creatorId,
+            creatorKind: task.creatorKind,
+            assigneeId,
+            assigneeKind,
+            title: task.title,
+          }),
+        )
+      }
       if (task && assigneeKind === "agent") {
         nudgeAgent(assigneeId, task.projectId)
       }
@@ -509,10 +546,14 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       if (!target) return prev
 
       if (target.kind === "message" && target.payload.message) {
-        setMessages((m) => [...m, target.payload.message as Message])
+        const message = target.payload.message as Message
+        setMessages((m) => [...m, message])
+        setInteractionPulses((prev) => appendMessagePulse(prev, message))
       }
       if (target.kind === "task" && target.payload.task) {
-        setTasks((t) => [...t, target.payload.task as Task])
+        const task = target.payload.task as Task
+        setTasks((t) => [...t, task])
+        setInteractionPulses((prev) => appendTaskPulse(prev, task))
       }
       if (target.kind === "task_update" && target.payload.taskId && target.payload.patch) {
         const { taskId, patch } = target.payload as { taskId: string; patch: Partial<Task> }
@@ -537,6 +578,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       activity,
       logs,
       proposals,
+      interactionPulses,
       agentRuntimes,
       projectRuntimes,
       getProjectTasks: (projectId) => tasksForProject(tasks, projectId),
@@ -548,6 +590,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         agentRuntimes.find((rt) => rt.agentId === agentId && rt.projectId === projectId),
       getProjectRuntime: (projectId) =>
         projectRuntimes.find((pr) => pr.projectId === projectId),
+      getProjectInteractionPulses: (projectId) =>
+        interactionPulses.filter((pulse) => pulse.projectId === projectId),
       runningAgentCount: (projectId) =>
         agentRuntimes.filter(
           (rt) => rt.projectId === projectId && rt.runState === "running",
@@ -578,6 +622,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       activity,
       logs,
       proposals,
+      interactionPulses,
       agentRuntimes,
       projectRuntimes,
       startAgent,
