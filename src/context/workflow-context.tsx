@@ -41,6 +41,7 @@ import {
   appendTaskPulse,
   pruneInteractionPulses,
 } from "@/lib/workflow/interaction-pulses"
+import { notifyWorkflowBeat } from "@/lib/workflow/workflow-notifications"
 import {
   WORKFLOW_LIMITS,
   runtimeKey,
@@ -139,7 +140,7 @@ interface WorkflowContextValue {
 const WorkflowContext = createContext<WorkflowContextValue | null>(null)
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
-  const { agents, users, agentProjectConfigs, orgProjects } = useApp()
+  const { agents, users, agentProjectConfigs, orgProjects, sessionUser } = useApp()
 
   const [clock, setClock] = useState<WorkflowClock>({
     simNow: Date.now(),
@@ -263,8 +264,18 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       if (syncDemoWorkspaceFromBeat(projectId, beatResult.activity)) {
         setDemoWorkspaceRevision((revision) => revision + 1)
       }
+
+      if (beatResult.messages.length > 0 || beatResult.proposals.length > 0) {
+        notifyWorkflowBeat({
+          sessionUserId: sessionUser.id,
+          messages: beatResult.messages,
+          proposals: beatResult.proposals,
+          agents: stateRef.current.agents,
+          users: stateRef.current.users,
+        })
+      }
     },
-    [],
+    [sessionUser.id],
   )
 
   useEffect(() => {
