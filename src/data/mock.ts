@@ -99,6 +99,8 @@ export interface ProjectFileNode {
   parentId: string | null
   size?: string
   updatedAt: string
+  /** Path under src/data/sample-workspace/ for mock file content */
+  contentPath?: string
 }
 
 export interface Configuration {
@@ -862,21 +864,21 @@ export const projectFiles: ProjectFileNode[] = [
   { id: "f1", projectId: "proj-1", name: "research", kind: "folder", parentId: null, updatedAt: "2026-05-18T09:00:00Z" },
   { id: "f2", projectId: "proj-1", name: "drafts", kind: "folder", parentId: null, updatedAt: "2026-05-19T08:00:00Z" },
   { id: "f3", projectId: "proj-1", name: "references", kind: "folder", parentId: null, updatedAt: "2026-05-16T14:00:00Z" },
-  { id: "f4", projectId: "proj-1", name: "competitive-landscape.md", kind: "file", parentId: "f1", size: "24 KB", updatedAt: "2026-05-19T07:30:00Z" },
+  { id: "f4", projectId: "proj-1", name: "competitive-landscape.md", kind: "file", parentId: "f1", size: "24 KB", updatedAt: "2026-05-19T07:30:00Z", contentPath: "proj-1/competitive-landscape.md" },
   { id: "f5", projectId: "proj-1", name: "2026-strategy-retrospective.pdf", kind: "file", parentId: "f3", size: "1.8 MB", updatedAt: "2026-05-10T09:00:00Z" },
   { id: "f6", projectId: "proj-1", name: "executive-summary-v3.docx", kind: "file", parentId: "f2", size: "86 KB", updatedAt: "2026-05-19T06:00:00Z" },
   // proj-2 — CloudSuite Feedback
   { id: "f10", projectId: "proj-2", name: "feedback-raw", kind: "folder", parentId: null, updatedAt: "2026-05-18T12:00:00Z" },
   { id: "f11", projectId: "proj-2", name: "themes", kind: "folder", parentId: null, updatedAt: "2026-05-17T10:00:00Z" },
   { id: "f12", projectId: "proj-2", name: "feature-briefs", kind: "folder", parentId: null, updatedAt: "2026-05-19T08:00:00Z" },
-  { id: "f13", projectId: "proj-2", name: "interview-notes-may.md", kind: "file", parentId: "f10", size: "42 KB", updatedAt: "2026-05-18T16:00:00Z" },
-  { id: "f14", projectId: "proj-2", name: "theme-onboarding-friction.md", kind: "file", parentId: "f11", size: "12 KB", updatedAt: "2026-05-19T07:00:00Z" },
-  { id: "f15", projectId: "proj-2", name: "brief-sso-improvements.md", kind: "file", parentId: "f12", size: "8 KB", updatedAt: "2026-05-19T08:30:00Z" },
+  { id: "f13", projectId: "proj-2", name: "interview-notes-may.md", kind: "file", parentId: "f10", size: "42 KB", updatedAt: "2026-05-18T16:00:00Z", contentPath: "proj-2/interview-notes-may.md" },
+  { id: "f14", projectId: "proj-2", name: "theme-onboarding-friction.md", kind: "file", parentId: "f11", size: "12 KB", updatedAt: "2026-05-19T07:00:00Z", contentPath: "proj-2/theme-onboarding-friction.md" },
+  { id: "f15", projectId: "proj-2", name: "brief-sso-improvements.md", kind: "file", parentId: "f12", size: "8 KB", updatedAt: "2026-05-19T08:30:00Z", contentPath: "proj-2/brief-sso-improvements.md" },
   // proj-3 — ServiceNow Helpdesk
   { id: "f20", projectId: "proj-3", name: "exports", kind: "folder", parentId: null, updatedAt: "2026-05-19T04:00:00Z" },
   { id: "f21", projectId: "proj-3", name: "reports", kind: "folder", parentId: null, updatedAt: "2026-05-18T11:00:00Z" },
   { id: "f22", projectId: "proj-3", name: "tickets-90d-0519.csv", kind: "file", parentId: "f20", size: "62 MB", updatedAt: "2026-05-19T04:00:00Z" },
-  { id: "f23", projectId: "proj-3", name: "sla-breach-summary.md", kind: "file", parentId: "f21", size: "14 KB", updatedAt: "2026-05-19T05:30:00Z" },
+  { id: "f23", projectId: "proj-3", name: "sla-breach-summary.md", kind: "file", parentId: "f21", size: "14 KB", updatedAt: "2026-05-19T05:30:00Z", contentPath: "proj-3/sla-breach-summary.md" },
   // proj-4 — Weekly Sales Report & Trends
   { id: "f30", projectId: "proj-4", name: "weekly", kind: "folder", parentId: null, updatedAt: "2026-05-19T09:00:00Z" },
   { id: "f31", projectId: "proj-4", name: "templates", kind: "folder", parentId: null, updatedAt: "2026-05-14T10:00:00Z" },
@@ -894,7 +896,7 @@ export const projectFiles: ProjectFileNode[] = [
   { id: "f54", projectId: "proj-4", name: "week-20-pipeline.csv", kind: "file", parentId: "f51", size: "860 KB", updatedAt: "2026-05-19T07:20:00Z" },
   { id: "f55", projectId: "proj-4", name: "week-20-bookings.csv", kind: "file", parentId: "f52", size: "420 KB", updatedAt: "2026-05-19T07:25:00Z" },
   { id: "f32", projectId: "proj-4", name: "week-20-2026-report.pptx", kind: "file", parentId: "f57", size: "420 KB", updatedAt: "2026-05-19T08:45:00Z" },
-  { id: "f59", projectId: "proj-4", name: "week-20-trend-commentary.md", kind: "file", parentId: "f57", size: "18 KB", updatedAt: "2026-05-19T09:10:00Z" },
+  { id: "f59", projectId: "proj-4", name: "week-20-trend-commentary.md", kind: "file", parentId: "f57", size: "18 KB", updatedAt: "2026-05-19T09:10:00Z", contentPath: "proj-4/week-20-trend-commentary.md" },
   { id: "f60", projectId: "proj-4", name: "week-19-2026-report.pptx", kind: "file", parentId: "f58", size: "398 KB", updatedAt: "2026-05-12T08:30:00Z" },
   { id: "f33", projectId: "proj-4", name: "leadership-deck-template.pptx", kind: "file", parentId: "f61", size: "180 KB", updatedAt: "2026-05-14T10:30:00Z" },
   { id: "f63", projectId: "proj-4", name: "pipeline-waterfall-template.pptx", kind: "file", parentId: "f62", size: "96 KB", updatedAt: "2026-05-14T10:35:00Z" },

@@ -3,6 +3,7 @@ import {
   ChevronRight,
   Database,
   File,
+  FileText,
   Folder,
   KeyRound,
   Link2,
@@ -18,6 +19,8 @@ import {
   type Resource,
   type Vault,
 } from "@/data/mock"
+import { FilePreviewSheet } from "@/components/workspace/file-preview-sheet"
+import { isViewableFile } from "@/lib/workspace/sample-file-content"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -67,11 +70,15 @@ function integrationStatusVariant(
 function FileBrowser({
   files,
   currentFolderId,
+  selectedFileId,
   onNavigate,
+  onSelectFile,
 }: {
   files: ProjectFileNode[]
   currentFolderId: string | null
+  selectedFileId: string | null
   onNavigate: (folderId: string | null) => void
+  onSelectFile: (fileId: string | null) => void
 }) {
   const path = useMemo(() => {
     const segments: ProjectFileNode[] = []
@@ -132,30 +139,44 @@ function FileBrowser({
         <p className="text-sm text-muted-foreground">This folder is empty.</p>
       ) : (
         <div className="divide-y divide-border rounded-lg border border-border">
-          {entries.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => entry.kind === "folder" && onNavigate(entry.id)}
-              className={cn(
-                "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors",
-                entry.kind === "folder" && "hover:bg-muted/50",
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                {entry.kind === "folder" ? (
-                  <Folder className="size-4 shrink-0 text-primary" />
-                ) : (
-                  <File className="size-4 shrink-0 text-muted-foreground" />
+          {entries.map((entry) => {
+            const isSelected = entry.id === selectedFileId
+            const isPreviewable = entry.kind === "file" && isViewableFile(entry)
+
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => {
+                  if (entry.kind === "folder") {
+                    onNavigate(entry.id)
+                    return
+                  }
+                  onSelectFile(isSelected ? null : entry.id)
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors",
+                  (entry.kind === "folder" || isPreviewable) && "hover:bg-muted/50",
+                  isSelected && "bg-primary/5",
                 )}
-                <span className="truncate font-medium">{entry.name}</span>
-              </div>
-              <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
-                {entry.size && <span>{entry.size}</span>}
-                <span>{formatRelativeTime(entry.updatedAt)}</span>
-              </div>
-            </button>
-          ))}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  {entry.kind === "folder" ? (
+                    <Folder className="size-4 shrink-0 text-primary" />
+                  ) : isPreviewable ? (
+                    <FileText className="size-4 shrink-0 text-primary" />
+                  ) : (
+                    <File className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="truncate font-medium">{entry.name}</span>
+                </div>
+                <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
+                  {entry.size && <span>{entry.size}</span>}
+                  <span>{formatRelativeTime(entry.updatedAt)}</span>
+                </div>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
@@ -294,8 +315,13 @@ export function WorkspaceTab({
   const { resources, vaults } = useApp()
   const [view, setView] = useState<WorkspaceView>("files")
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
 
   const files = useMemo(() => getProjectFiles(projectId), [projectId])
+  const selectedFile = useMemo(
+    () => files.find((file) => file.id === selectedFileId) ?? null,
+    [files, selectedFileId],
+  )
   const integrations = useMemo(
     () => getProjectIntegrations(projectId, resources),
     [projectId, resources],
@@ -313,8 +339,13 @@ export function WorkspaceTab({
     if (!isActive) {
       setView("files")
       setCurrentFolderId(null)
+      setSelectedFileId(null)
     }
   }, [isActive])
+
+  useEffect(() => {
+    setSelectedFileId(null)
+  }, [currentFolderId, projectId])
 
   useEffect(() => {
     if (!isActive || !focus) return
@@ -394,7 +425,9 @@ export function WorkspaceTab({
           <FileBrowser
             files={files}
             currentFolderId={currentFolderId}
+            selectedFileId={selectedFileId}
             onNavigate={setCurrentFolderId}
+            onSelectFile={setSelectedFileId}
           />
         )}
         {view === "integrations" && <IntegrationsPanel integrations={integrations} />}
@@ -402,6 +435,13 @@ export function WorkspaceTab({
           <VaultsPanel linkedVaults={linkedVaults} availableVaults={availableVaults} />
         )}
       </CardContent>
+
+      <FilePreviewSheet
+        file={selectedFile}
+        onOpenChange={(open) => {
+          if (!open) setSelectedFileId(null)
+        }}
+      />
     </Card>
   )
 }
