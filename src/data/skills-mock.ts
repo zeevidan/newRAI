@@ -473,6 +473,50 @@ Cite every factual claim with [source: document name]. Flag uncertainty explicit
     },
   },
   {
+    id: "skill-org-acme-voc",
+    scope: "org",
+    orgId: "org-1",
+    metadata: {
+      name: "voice-of-customer-synthesis",
+      description:
+        "Build Voice of the Customer reports from multi-source feedback. Use when synthesizing customer signals into themes, sentiment, and a board-ready narrative. Always mask customer names and deal sizes.",
+    },
+    rawContent: `---
+name: voice-of-customer-synthesis
+description: Build Voice of the Customer reports from multi-source feedback (Salesforce, ServiceNow, call transcripts). Always mask customer names and deal sizes.
+---
+
+# Voice of the Customer Synthesis
+
+## Instructions
+
+1. Pull feedback from every connected source (Salesforce, ServiceNow, Gong) before synthesizing.
+2. Mask customer names and exact deal sizes using the project vault. Use stable aliases (Customer A) and ARR bands ($250K–$500K) — never raw values.
+3. De-duplicate signals that appear in more than one source for the same account and week.
+4. Weight themes by signal count multiplied by the originating account's ARR band.
+5. Score sentiment by segment and region; call out event-driven dips.
+6. Lead with conclusions, support every claim with evidence counts and a masked quote, and end with owner-tagged recommendations.
+7. Write the final report to the project's report/ folder.
+
+## Examples
+
+- "Synthesize this quarter's customer feedback into a VoC report"
+- "Cluster these tickets and call transcripts into themes with sentiment"
+`,
+    category: "Documents",
+    tags: ["voice-of-customer", "research", "writing", "masking"],
+    source: "Acme Corp",
+    updatedAt: "2026-05-18T10:00:00Z",
+    createdBy: "Maya Thompson",
+    validation: {
+      status: "validated",
+      validatedAt: "2026-05-18T11:00:00Z",
+      validatedBy: "Maya Thompson",
+      checks: validatedChecks(),
+      warnings: [],
+    },
+  },
+  {
     id: "skill-org-northwind-onboarding",
     scope: "org",
     orgId: "org-2",

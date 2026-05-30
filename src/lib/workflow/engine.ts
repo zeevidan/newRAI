@@ -5,6 +5,7 @@ import type {
   Task,
 } from "@/data/mock"
 import { getPlaybookForAgent, seededPick } from "@/lib/workflow/playbooks"
+import { isDemoAgent, runDemoBeat } from "@/lib/workflow/demo-scripts"
 import type {
   BeatResult,
   BeatWorld,
@@ -27,6 +28,15 @@ function agentTasks(world: BeatWorld) {
       task.assigneeId === world.agent.id &&
       task.assigneeKind === "agent" &&
       task.status !== "done",
+  )
+}
+
+function hasPendingProposals(world: BeatWorld) {
+  return world.proposals.some(
+    (proposal) =>
+      proposal.agentId === world.agent.id &&
+      proposal.projectId === world.projectId &&
+      proposal.status === "pending",
   )
 }
 
@@ -55,6 +65,39 @@ export function runBeat(world: BeatWorld, beats: number): BeatResult {
   if (!world.config.heartbeat.enabled) {
     result.currentAction = "Heartbeat disabled"
     return result
+  }
+
+  if (autonomy === "manual" && hasPendingProposals(world)) {
+    result.currentAction = "Waiting for approval"
+    result.logs.push({
+      id: id("log", world.simNow),
+      agentId: world.agent.id,
+      level: "info",
+      message: `Heartbeat beat #${beats + 1}: waiting for approval on pending proposal(s)`,
+      timestamp: isoFromSim(world.simNow),
+    })
+    return result
+  }
+
+  if (isDemoAgent(world.agent.id)) {
+    const outcome = runDemoBeat(world)
+    if (outcome) {
+      result.currentAction = outcome.currentAction
+      result.messages = outcome.messages
+      result.tasks = outcome.tasks
+      result.taskUpdates = outcome.taskUpdates
+      result.activity = outcome.activity
+      result.proposals = outcome.proposals
+      result.logs.push(...outcome.logs)
+      result.logs.push({
+        id: id("log", world.simNow),
+        agentId: world.agent.id,
+        level: "info",
+        message: `Heartbeat beat #${beats + 1}: ${result.currentAction}`,
+        timestamp: isoFromSim(world.simNow),
+      })
+      return result
+    }
   }
 
   const apply = autonomy === "full" || autonomy === "suggest"

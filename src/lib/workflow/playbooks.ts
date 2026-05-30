@@ -22,6 +22,21 @@ export function getPlaybookForAgent(agentId: string, goals: string[]): PlaybookA
     return ["progress_task", "handoff_to_teammate", "emit_finding"]
   }
 
+  // Voice of the Customer Report
+  if (agentId === "a20") {
+    // Lead editor (manual autonomy): proposes the publish step for human approval.
+    return ["complete_task", "report_to_manager", "progress_task"]
+  }
+  if (agentId === "a21") {
+    return ["emit_finding", "progress_task", "report_to_manager", "complete_task"]
+  }
+  if (agentId === "a22") {
+    return ["emit_finding", "progress_task", "ask_person", "report_to_manager"]
+  }
+  if (agentId === "a23") {
+    return ["emit_finding", "progress_task", "handoff_to_teammate", "report_to_manager"]
+  }
+
   if (goals.length > 1) {
     return [...base, "complete_task", "ask_person"]
   }

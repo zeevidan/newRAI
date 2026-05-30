@@ -63,6 +63,8 @@ export interface BeatWorld {
   agents: Agent[]
   tasks: Task[]
   messages: Message[]
+  proposals: WorkflowProposal[]
+  activity: ActivityItem[]
 }
 
 export interface BeatResult {
