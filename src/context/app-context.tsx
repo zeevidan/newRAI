@@ -191,12 +191,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (profileKey === "member") {
-        const memberOrg = initialUsers.find((item) => item.id === user.id)?.orgId
-        if (memberOrg) {
-          setCurrentOrgId(memberOrg)
-          const first = projectList.find((p) => p.orgId === memberOrg)
-          setSelectedProjectId(first?.id ?? null)
+      if (profileKey === "member" || profileKey === "mayaThompson") {
+        const member = initialUsers.find((item) => item.id === user.id)
+        if (member?.orgId) {
+          setCurrentOrgId(member.orgId)
+          const preferredProjectId = member.projectIds?.[0]
+          const project = preferredProjectId
+            ? projectList.find((p) => p.id === preferredProjectId)
+            : projectList.find((p) => p.orgId === member.orgId)
+          setSelectedProjectId(project?.id ?? null)
         }
         return
       }

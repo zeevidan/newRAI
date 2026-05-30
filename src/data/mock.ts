@@ -233,7 +233,7 @@ export interface Policy {
 }
 
 /** Swap to mockSessionProfiles.orgAdmin or .member to test other personas. */
-export type MockSessionProfileKey = "platformAdmin" | "orgAdmin" | "member"
+export type MockSessionProfileKey = "platformAdmin" | "orgAdmin" | "member" | "mayaThompson"
 
 export const mockSessionProfiles: Record<MockSessionProfileKey, SessionUser> = {
   platformAdmin: {
@@ -259,6 +259,13 @@ export const mockSessionProfiles: Record<MockSessionProfileKey, SessionUser> = {
     avatar: "ML",
     platformRole: "member",
   },
+  mayaThompson: {
+    id: "u20",
+    name: "Maya Thompson",
+    email: "maya.thompson@acmecorp.com",
+    avatar: "MT",
+    platformRole: "member",
+  },
 }
 
 export const mockSessionProfileOptions: {
@@ -279,7 +286,12 @@ export const mockSessionProfileOptions: {
   {
     key: "member",
     label: "Morgan Lee",
-    description: "Member",
+    description: "Member · Acme Corp",
+  },
+  {
+    key: "mayaThompson",
+    label: "Maya Thompson",
+    description: "Member · Acme Corp",
   },
 ]
 
