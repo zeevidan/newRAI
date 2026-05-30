@@ -2,6 +2,7 @@ import type {
   ActivityItem,
   AgentLogEntry,
   Message,
+  ProjectFileNode,
   Task,
 } from "@/data/mock"
 import type { BeatWorld, WorkflowProposal } from "@/lib/workflow/types"
@@ -425,4 +426,146 @@ export function runDemoBeat(world: BeatWorld): DemoBeatOutcome | null {
     default:
       return null
   }
+}
+
+// ── Staged workspace files (proj-7) ─────────────────────────────────────────
+// Folders live in mock data; files appear here as the scripted pipeline writes
+// them. Activity markers in the beats above drive unlock timing.
+
+export const DEMO_PROJECT_ID = "proj-7"
+
+export const DEMO_WORKSPACE_FILES: ProjectFileNode[] = [
+  {
+    id: "f110",
+    projectId: DEMO_PROJECT_ID,
+    name: "sf-customer-feedback-q2.csv",
+    kind: "file",
+    parentId: "f101",
+    size: "1.2 MB",
+    updatedAt: "2026-05-19T09:10:00Z",
+  },
+  {
+    id: "f111",
+    projectId: DEMO_PROJECT_ID,
+    name: "sf-deal-context-masked.csv",
+    kind: "file",
+    parentId: "f101",
+    size: "240 KB",
+    updatedAt: "2026-05-19T09:12:00Z",
+  },
+  {
+    id: "f112",
+    projectId: DEMO_PROJECT_ID,
+    name: "snow-tickets-90d.csv",
+    kind: "file",
+    parentId: "f102",
+    size: "48 MB",
+    updatedAt: "2026-05-19T08:50:00Z",
+  },
+  {
+    id: "f113",
+    projectId: DEMO_PROJECT_ID,
+    name: "gong-call-highlights.md",
+    kind: "file",
+    parentId: "f103",
+    size: "22 KB",
+    updatedAt: "2026-05-19T08:45:00Z",
+    contentPath: "proj-7/gong-call-highlights.md",
+  },
+  {
+    id: "f114",
+    projectId: DEMO_PROJECT_ID,
+    name: "themes-clustered.md",
+    kind: "file",
+    parentId: "f104",
+    size: "16 KB",
+    updatedAt: "2026-05-19T09:22:00Z",
+    contentPath: "proj-7/themes-clustered.md",
+  },
+  {
+    id: "f115",
+    projectId: DEMO_PROJECT_ID,
+    name: "sentiment-by-segment.md",
+    kind: "file",
+    parentId: "f104",
+    size: "11 KB",
+    updatedAt: "2026-05-19T09:24:00Z",
+    contentPath: "proj-7/sentiment-by-segment.md",
+  },
+  {
+    id: "f116",
+    projectId: DEMO_PROJECT_ID,
+    name: "voice-of-the-customer-q2-2026.md",
+    kind: "file",
+    parentId: "f105",
+    size: "28 KB",
+    updatedAt: "2026-05-19T09:30:00Z",
+    contentPath: "proj-7/voice-of-the-customer-q2-2026.md",
+  },
+  {
+    id: "f117",
+    projectId: DEMO_PROJECT_ID,
+    name: "voc-report-template.md",
+    kind: "file",
+    parentId: "f106",
+    size: "6 KB",
+    updatedAt: "2026-05-17T10:00:00Z",
+    contentPath: "proj-7/voc-report-template.md",
+  },
+]
+
+/** Activity substrings → file IDs to reveal when that step completes. */
+const DEMO_ACTIVITY_FILE_UNLOCKS: [string, string[]][] = [
+  ["masked deal sizes into ARR bands", ["f110", "f111"]],
+  ["masked customer identities via vault", ["f112", "f113"]],
+  ["scored sentiment by segment", ["f114", "f115"]],
+  ["drafted the Voice of the Customer report", ["f117"]],
+  ["published voice-of-the-customer-q2-2026.md", ["f116"]],
+]
+
+const unlockedDemoFileIds = new Set<string>()
+const unlockedDemoFileAt = new Map<string, string>()
+
+export function resetDemoWorkspace() {
+  unlockedDemoFileIds.clear()
+  unlockedDemoFileAt.clear()
+}
+
+/** Call after each demo beat; returns true when new files were revealed. */
+export function syncDemoWorkspaceFromBeat(
+  projectId: string,
+  activity: ActivityItem[],
+): boolean {
+  if (projectId !== DEMO_PROJECT_ID || activity.length === 0) return false
+
+  let changed = false
+  for (const item of activity) {
+    for (const [marker, fileIds] of DEMO_ACTIVITY_FILE_UNLOCKS) {
+      if (!item.action.includes(marker)) continue
+      for (const fileId of fileIds) {
+        if (unlockedDemoFileIds.has(fileId)) continue
+        unlockedDemoFileIds.add(fileId)
+        unlockedDemoFileAt.set(fileId, item.createdAt)
+        changed = true
+      }
+    }
+  }
+  return changed
+}
+
+/** Merge folder tree from mock with demo files unlocked so far. */
+export function applyDemoWorkspaceFilter(
+  projectId: string,
+  files: ProjectFileNode[],
+): ProjectFileNode[] {
+  if (projectId !== DEMO_PROJECT_ID) return files
+
+  const unlocked = DEMO_WORKSPACE_FILES.filter((file) =>
+    unlockedDemoFileIds.has(file.id),
+  ).map((file) => ({
+    ...file,
+    updatedAt: unlockedDemoFileAt.get(file.id) ?? file.updatedAt,
+  }))
+
+  return [...files, ...unlocked]
 }

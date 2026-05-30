@@ -1086,14 +1086,7 @@ export const projectFiles: ProjectFileNode[] = [
   { id: "f101", projectId: "proj-7", name: "salesforce", kind: "folder", parentId: "f100", updatedAt: "2026-05-19T09:10:00Z" },
   { id: "f102", projectId: "proj-7", name: "servicenow", kind: "folder", parentId: "f100", updatedAt: "2026-05-19T08:50:00Z" },
   { id: "f103", projectId: "proj-7", name: "transcripts", kind: "folder", parentId: "f100", updatedAt: "2026-05-19T08:40:00Z" },
-  { id: "f110", projectId: "proj-7", name: "sf-customer-feedback-q2.csv", kind: "file", parentId: "f101", size: "1.2 MB", updatedAt: "2026-05-19T09:10:00Z" },
-  { id: "f111", projectId: "proj-7", name: "sf-deal-context-masked.csv", kind: "file", parentId: "f101", size: "240 KB", updatedAt: "2026-05-19T09:12:00Z" },
-  { id: "f112", projectId: "proj-7", name: "snow-tickets-90d.csv", kind: "file", parentId: "f102", size: "48 MB", updatedAt: "2026-05-19T08:50:00Z" },
-  { id: "f113", projectId: "proj-7", name: "gong-call-highlights.md", kind: "file", parentId: "f103", size: "22 KB", updatedAt: "2026-05-19T08:45:00Z", contentPath: "proj-7/gong-call-highlights.md" },
-  { id: "f114", projectId: "proj-7", name: "themes-clustered.md", kind: "file", parentId: "f104", size: "16 KB", updatedAt: "2026-05-19T09:22:00Z", contentPath: "proj-7/themes-clustered.md" },
-  { id: "f115", projectId: "proj-7", name: "sentiment-by-segment.md", kind: "file", parentId: "f104", size: "11 KB", updatedAt: "2026-05-19T09:24:00Z", contentPath: "proj-7/sentiment-by-segment.md" },
-  { id: "f116", projectId: "proj-7", name: "voice-of-the-customer-q2-2026.md", kind: "file", parentId: "f105", size: "28 KB", updatedAt: "2026-05-19T09:30:00Z", contentPath: "proj-7/voice-of-the-customer-q2-2026.md" },
-  { id: "f117", projectId: "proj-7", name: "voc-report-template.md", kind: "file", parentId: "f106", size: "6 KB", updatedAt: "2026-05-17T10:00:00Z", contentPath: "proj-7/voc-report-template.md" },
+  // proj-7 file nodes are staged by the demo script — see demo-scripts.ts
   // other orgs
   { id: "f40", projectId: "proj-5", name: "schemas", kind: "folder", parentId: null, updatedAt: "2026-05-16T11:00:00Z" },
   { id: "f41", projectId: "proj-6", name: "templates", kind: "folder", parentId: null, updatedAt: "2026-05-14T10:00:00Z" },

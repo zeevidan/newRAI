@@ -31,6 +31,11 @@ import {
 } from "@/data/workflow-seed"
 import { getDueAgents, runBeat } from "@/lib/workflow/engine"
 import {
+  DEMO_PROJECT_ID,
+  resetDemoWorkspace,
+  syncDemoWorkspaceFromBeat,
+} from "@/lib/workflow/demo-scripts"
+import {
   appendBeatInteractionPulses,
   appendMessagePulse,
   appendTaskPulse,
@@ -94,6 +99,8 @@ interface WorkflowContextValue {
   getProjectInteractionPulses: (projectId: string) => GraphInteractionPulse[]
   runningAgentCount: (projectId: string) => number
   pendingProposalCount: (projectId: string) => number
+  /** Bumps when the VoC demo reveals workspace files — use as a useMemo dep. */
+  demoWorkspaceRevision: number
   startAgent: (agentId: string, projectId: string) => void
   pauseAgent: (agentId: string, projectId: string) => void
   stopAgent: (agentId: string, projectId: string) => void
@@ -145,6 +152,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [logs, setLogs] = useState<AgentLogEntry[]>(() => [...initialAgentLogs])
   const [proposals, setProposals] = useState<WorkflowProposal[]>([])
   const [interactionPulses, setInteractionPulses] = useState<GraphInteractionPulse[]>([])
+  const [demoWorkspaceRevision, setDemoWorkspaceRevision] = useState(0)
   const [agentRuntimes, setAgentRuntimes] = useState<AgentRuntime[]>(() =>
     buildInitialRuntimes(agents),
   )
@@ -252,6 +260,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
             : rt,
         ),
       )
+      if (syncDemoWorkspaceFromBeat(projectId, beatResult.activity)) {
+        setDemoWorkspaceRevision((revision) => revision + 1)
+      }
     },
     [],
   )
@@ -368,6 +379,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const startProject = useCallback(
     (projectId: string) => {
+      if (projectId === DEMO_PROJECT_ID) {
+        resetDemoWorkspace()
+        setDemoWorkspaceRevision((revision) => revision + 1)
+      }
       const projectAgents = agents.filter((agent) => agent.projectIds?.includes(projectId))
       for (const agent of projectAgents) {
         if (agent.status !== "archived") startAgent(agent.id, projectId)
@@ -602,6 +617,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         ).length,
       pendingProposalCount: (projectId) =>
         proposals.filter((p) => p.projectId === projectId && p.status === "pending").length,
+      demoWorkspaceRevision,
       startAgent,
       pauseAgent,
       stopAgent,
@@ -629,6 +645,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       interactionPulses,
       agentRuntimes,
       projectRuntimes,
+      demoWorkspaceRevision,
       startAgent,
       pauseAgent,
       stopAgent,

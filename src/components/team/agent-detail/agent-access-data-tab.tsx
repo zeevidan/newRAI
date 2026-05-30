@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import {
   dataClassificationOptions,
   getAgentAccessGrant,
@@ -12,6 +13,7 @@ import {
   getProjectIntegrations,
   getProjectVaults,
 } from "@/data/mock"
+import { applyDemoWorkspaceFilter } from "@/lib/workflow/demo-scripts"
 import { MultiSelectPanel } from "@/components/team/agent-detail/multi-select-panel"
 import { WorkspaceFolderTree } from "@/components/team/agent-detail/workspace-folder-tree"
 import { fromValueLabelPairs, WORKSPACE_SCOPE_ITEMS } from "@/lib/select-items"
@@ -47,6 +49,7 @@ export function AgentAccessDataTab({ agentId, projectId, onSaved }: AgentAccessD
     updateAgentAccessGrant,
     updateAgentProjectConfig,
   } = useApp()
+  const { demoWorkspaceRevision } = useWorkflow()
 
   const grant = useMemo(
     () => getAgentAccessGrant(agentAccessGrants, agentId, projectId),
@@ -57,7 +60,10 @@ export function AgentAccessDataTab({ agentId, projectId, onSaved }: AgentAccessD
     [agentId, projectId, agentProjectConfigs],
   )
 
-  const projectFiles = useMemo(() => getProjectFiles(projectId), [projectId])
+  const projectFiles = useMemo(
+    () => applyDemoWorkspaceFilter(projectId, getProjectFiles(projectId)),
+    [projectId, demoWorkspaceRevision],
+  )
   const projectVaults = useMemo(() => getProjectVaults(projectId, vaults), [projectId, vaults])
   const projectIntegrations = useMemo(
     () => getProjectIntegrations(projectId, resources),

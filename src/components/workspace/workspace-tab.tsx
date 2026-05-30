@@ -11,6 +11,7 @@ import {
   Upload,
 } from "lucide-react"
 import { useApp } from "@/context/app-context"
+import { useWorkflow } from "@/context/workflow-context"
 import {
   getProjectFiles,
   getProjectIntegrations,
@@ -19,6 +20,7 @@ import {
   type Resource,
   type Vault,
 } from "@/data/mock"
+import { applyDemoWorkspaceFilter } from "@/lib/workflow/demo-scripts"
 import { FilePreviewSheet } from "@/components/workspace/file-preview-sheet"
 import { isViewableFile } from "@/lib/workspace/sample-file-content"
 import { Badge } from "@/components/ui/badge"
@@ -313,11 +315,15 @@ export function WorkspaceTab({
   onFocusConsumed,
 }: WorkspaceTabProps) {
   const { resources, vaults } = useApp()
+  const { demoWorkspaceRevision } = useWorkflow()
   const [view, setView] = useState<WorkspaceView>("files")
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
 
-  const files = useMemo(() => getProjectFiles(projectId), [projectId])
+  const files = useMemo(
+    () => applyDemoWorkspaceFilter(projectId, getProjectFiles(projectId)),
+    [projectId, demoWorkspaceRevision],
+  )
   const selectedFile = useMemo(
     () => files.find((file) => file.id === selectedFileId) ?? null,
     [files, selectedFileId],
