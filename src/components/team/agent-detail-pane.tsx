@@ -4,6 +4,7 @@ import {
   Brain,
   Database,
   FileCode2,
+  HeartPulse,
   ScrollText,
   Settings2,
   Shield,
@@ -240,7 +241,10 @@ export function AgentDetailPane({
             <Shield className="size-4" />
             Guardrails
           </TabsTrigger>
-          <TabsTrigger value="heartbeat">Heartbeat</TabsTrigger>
+          <TabsTrigger value="heartbeat">
+            <HeartPulse className="size-4" />
+            Heartbeat
+          </TabsTrigger>
           <TabsTrigger value="budget">
             <Wallet className="size-4" />
             Budget
